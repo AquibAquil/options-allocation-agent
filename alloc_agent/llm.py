@@ -25,6 +25,8 @@ import json
 from dataclasses import dataclass, field
 from typing import Protocol
 
+import httpx
+
 from . import config
 
 
@@ -115,3 +117,97 @@ class AnthropicClient:
         return ModelResponse(
             data=data, raw_text=text, model=getattr(resp, "model", self.model), usage=usage
         )
+
+
+class GroqClient:
+    """Free-tier client for Groq's OpenAI-compatible endpoint (default).
+
+    Uses httpx directly -- already a dependency, so no new package. Groq hosts
+    Llama and Qwen models; unlike the Opus family, temperature IS available, so
+    it is pinned to 0, honouring PRD 2.1's "temperature zero" intent directly.
+
+    JSON is requested two ways at once for robustness: response_format
+    json_object, and the schema pasted into the system message. The parsers
+    validate defensively regardless, so a malformed reply holds, never trades.
+    """
+
+    def __init__(self, model: str = config.GROQ_MODEL):
+        self.model = model
+
+    def complete_json(
+        self, *, system: str, user: str, schema: dict, max_tokens: int = config.MODEL_MAX_TOKENS
+    ) -> ModelResponse:
+        if not config.GROQ_API_KEY:
+            raise ModelUnavailable(
+                "GROQ_API_KEY is not set (get a free key at console.groq.com)"
+            )
+
+        schema_instruction = (
+            "\n\nRespond with a single JSON object and nothing else -- no prose, no "
+            "markdown fences. It must conform exactly to this JSON Schema:\n"
+            + json.dumps(schema)
+        )
+        body = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system + schema_instruction},
+                {"role": "user", "content": user},
+            ],
+            "response_format": {"type": "json_object"},
+            "temperature": 0,
+            "max_tokens": max_tokens,
+        }
+
+        try:
+            with httpx.Client(timeout=90.0) as client:
+                resp = client.post(
+                    f"{config.GROQ_BASE_URL}/chat/completions",
+                    headers={"Authorization": f"Bearer {config.GROQ_API_KEY}"},
+                    json=body,
+                )
+            if resp.status_code != 200:
+                raise ModelUnavailable(
+                    f"groq call failed ({resp.status_code}): {resp.text[:200]}"
+                )
+            payload = resp.json()
+        except ModelUnavailable:
+            raise
+        except Exception as exc:
+            raise ModelUnavailable(f"groq call failed: {type(exc).__name__}: {exc}") from exc
+
+        choices = payload.get("choices") or []
+        if not choices:
+            raise ModelUnavailable("groq returned no choices")
+        finish = choices[0].get("finish_reason")
+        if finish == "length":
+            raise ModelUnavailable("groq response truncated (raise max_tokens)")
+
+        text = (choices[0].get("message") or {}).get("content")
+        if not text:
+            raise ModelUnavailable("groq returned an empty message")
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise ModelUnavailable(f"groq returned non-JSON: {exc}") from exc
+
+        return ModelResponse(
+            data=data,
+            raw_text=text,
+            model=payload.get("model", self.model),
+            usage=payload.get("usage", {}) or {},
+        )
+
+
+def make_client(model: str | None = None) -> ModelClient:
+    """Construct the model client the config selects.
+
+    The allocator and challenger take a client by injection, so this factory is
+    the only place that knows which provider is active -- a one-line switch,
+    with the rest of the system provider-agnostic.
+    """
+    provider = config.MODEL_PROVIDER
+    if provider == "groq":
+        return GroqClient(model or config.GROQ_MODEL)
+    if provider == "anthropic":
+        return AnthropicClient(model or config.ALLOCATOR_MODEL)
+    raise ModelUnavailable(f"unknown MODEL_PROVIDER {provider!r} (use groq or anthropic)")

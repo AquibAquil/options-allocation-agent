@@ -10,6 +10,33 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _load_dotenv(path: str) -> None:
+    """Minimal .env reader. Real environment variables always win.
+
+    Runs before any os.environ.get below, so values set in .env (provider,
+    Groq key, Alpaca keys, Anthropic profile) are visible to every read in this
+    module. Empty values are skipped, so a blank ANTHROPIC_API_KEY= line cannot
+    shadow an OAuth profile.
+    """
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and value and key not in os.environ:
+                os.environ[key] = value
+
+
+_load_dotenv(os.path.join(REPO_ROOT, ".env"))
+
 UNDERLYING = "QQQ"
 
 # --- Risk budget (PRD 2.2) -------------------------------------------------
@@ -54,46 +81,37 @@ MARKET_TZ = "America/New_York"
 CORRELATION_LOOKBACK_DAYS = 252
 
 # --- Model calls (PRD 2.1) -------------------------------------------------
-# PRD 2.1 specifies "temperature zero" for reproducibility. That parameter no
-# longer exists on the current Opus models -- temperature/top_p/top_k are
-# removed and return a 400. Determinism is pursued the modern way instead:
-# structured JSON output constrained by a schema, with the model's reasoning
-# captured in structured fields rather than free-form prose. Exact bit-for-bit
-# reproducibility is not achievable with these models; the audit trail (logged
-# evidence, reasoning, and decision) is what provides accountability, which is
-# what the PRD actually needs.
-ALLOCATOR_MODEL = "claude-opus-5"
-CHALLENGER_MODEL = "claude-opus-5"
+# The allocator and challenger run on a configurable provider. Default is Groq
+# (free tier, Llama 3.3 70B): the Claude subscription does not cover the raw
+# API, and this project declines to pay for API credits. The model call is
+# isolated behind the ModelClient interface, so the provider is a one-line
+# config switch and nothing downstream changes.
+#
+# PRD 2.1 asks for "temperature zero" for reproducibility. On Groq's Llama
+# models temperature IS available and is set to 0, which honours that intent
+# more directly than the current Opus models (where the parameter is removed).
+# Structured output is still requested; the parsers validate defensively either
+# way, so a malformed response holds rather than trades.
+MODEL_PROVIDER = os.environ.get("MODEL_PROVIDER", "groq").lower()
 MODEL_MAX_TOKENS = 16000
 
+# Anthropic (used only if MODEL_PROVIDER=anthropic and the org has API credits).
+ALLOCATOR_MODEL = "claude-opus-5"
+CHALLENGER_MODEL = "claude-opus-5"
+
+# Groq (default). Free API key from console.groq.com; no card required.
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+GROQ_BASE_URL = "https://api.groq.com/openai/v1"
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+
 # --- Paths -----------------------------------------------------------------
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ARTIFACT_DIR = os.path.join(REPO_ROOT, "artifacts")
 CACHE_DIR = os.path.join(ARTIFACT_DIR, "cache")
 LOG_DIR = os.path.join(REPO_ROOT, "logs")
 
 # --- Credentials -----------------------------------------------------------
-# Read from the environment, optionally seeded from a gitignored .env at the
-# repo root. Never committed, never logged, never printed in a packet.
-
-
-def _load_dotenv(path: str) -> None:
-    """Minimal .env reader. Real environment variables always win."""
-    if not os.path.exists(path):
-        return
-    with open(path, encoding="utf-8") as fh:
-        for line in fh:
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, _, value = line.partition("=")
-            key = key.strip()
-            value = value.strip().strip('"').strip("'")
-            if key and value and key not in os.environ:
-                os.environ[key] = value
-
-
-_load_dotenv(os.path.join(REPO_ROOT, ".env"))
+# Read from the environment, seeded from the gitignored .env loaded at the top
+# of this module. Never committed, never logged, never printed in a packet.
 
 # Canonical names are the ones the official Alpaca MCP server reads
 # (ALPACA_API_KEY / ALPACA_SECRET_KEY), so a single .env drives both this code

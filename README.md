@@ -31,7 +31,7 @@ Built for the Alpaca AI Trading Agents Hackathon, 28 Aug to 4 Sep 2026.
 | Sizing and chain verification | done |
 | Alpaca MCP server | connected, live-verified |
 | Execution + contract selection | done, verified on a real chain |
-| Allocator / Challenger | done, tested offline; live run needs a Claude credential |
+| Allocator / Challenger | done, tested offline; runs on Groq free tier (needs a free key) |
 | Orchestration (decision cycle) | done, tested offline with a fake gateway |
 | Scheduler (cadence) | done |
 | Equal-weight benchmark and allocation delta | done |
@@ -152,14 +152,26 @@ APPROVE uses the proposal, MODIFY uses the challenger's corrected numbers,
 REJECT holds the current allocation. Whatever results then goes through the hard
 risk gates, which correct anything the models let by.
 
-### Determinism and "temperature zero"
+### Provider and determinism
 
-PRD 2.1 specifies temperature zero for reproducibility. That parameter no longer
-exists on the current Opus models (it returns a 400). Determinism is pursued the
-modern way instead: the response is constrained to a JSON schema, and the
-reasoning lands in structured fields rather than free-form prose. Exact
-bit-for-bit reproducibility is not achievable with these models; the audit trail
--- logged evidence, reasoning, and decision -- is what provides accountability.
+The model call is isolated behind a `ModelClient` interface, so the provider is
+a one-line config switch (`MODEL_PROVIDER`) and nothing downstream -- allocator,
+challenger, gates, orchestrator -- changes. Two are implemented:
+
+- **Groq (default), free tier, Llama 3.3 70B.** The Claude subscription does not
+  cover the raw API and this project declines to pay for API credits, so the
+  live decision loop runs on Groq's free tier. Our whole usage is ~20 calls over
+  the window, trivially inside the free limits.
+- **Anthropic (Opus), optional.** Wired and tested; used only if
+  `MODEL_PROVIDER=anthropic` and the org has API credits. Auth resolves through
+  an isolated `ant auth login` OAuth profile -- no API key to manage.
+
+PRD 2.1 asks for temperature zero. On Groq's Llama models temperature is
+available and is pinned to 0, honouring that intent directly (on the Opus family
+the parameter is removed and returns a 400). JSON output is requested two ways
+for robustness -- response_format json_object plus the schema in the system
+message -- and the parsers validate defensively regardless, so a malformed reply
+holds rather than trades.
 
 ### No confidence scores, enforced twice
 
@@ -171,12 +183,11 @@ that smuggles one in under `confidence`, `certainty`, `probability`, or
 
 ### Credentials
 
-`llm.py` never reads or stores a credential; it defers to the SDK's resolution
-chain (an `ANTHROPIC_API_KEY`, an `ant auth login` subscription profile, or
-workload identity). A missing credential surfaces as `ModelUnavailable`, which
-upstream means hold the last valid allocation and do not trade -- the same as
-any other model failure (PRD 2.5). The unattended VPS run should use an API key;
-a subscription profile works for local development.
+The default path needs one free thing: a Groq API key (`console.groq.com`, no
+card), placed in `.env` as `GROQ_API_KEY`. A missing or invalid key surfaces as
+`ModelUnavailable`, which upstream means hold the last valid allocation and do
+not trade -- the same as any other model failure (PRD 2.5). `llm.py` never logs
+or prints a credential.
 
 ## The decision cycle
 
@@ -401,6 +412,8 @@ completed session so a partial bar never enters a volatility calculation.
 
 Named per hackathon rules:
 
+- **Groq** -- free-tier LLM inference (Llama 3.3 70B) for the allocator and
+  challenger, via its OpenAI-compatible endpoint.
 - **CBOE** -- published VXN daily history, used as the implied-volatility
   reference series. External data provider, no credentials required.
 - **scipy** -- normal distribution functions in the Black-Scholes precompute
