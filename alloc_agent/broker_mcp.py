@@ -372,3 +372,18 @@ class McpBrokerGateway:
 
     def order_status(self, *, client_order_id: str) -> dict:
         return self._b.call("get_order_by_client_id", {"client_order_id": client_order_id})
+
+    # -- calendar (for the scheduler) --------------------------------------
+
+    def trading_dates(self, start: dt.date, end: dt.date) -> list[str]:
+        """ISO trading dates in [start, end] from Alpaca's calendar (PRD 2.5).
+
+        Never hardcoded: holidays and early closes are handled by asking. The
+        calendar only returns rows for days the market actually trades, so the
+        weekend and Labor Day gaps are simply absent.
+        """
+        data = self._b.call(
+            "get_calendar", {"start": start.isoformat(), "end": end.isoformat()}
+        )
+        rows = data.get("result", []) if isinstance(data, dict) else []
+        return [row["date"] for row in rows if row.get("date")]

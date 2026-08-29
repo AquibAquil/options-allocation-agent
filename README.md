@@ -34,6 +34,7 @@ Built for the Alpaca AI Trading Agents Hackathon, 28 Aug to 4 Sep 2026.
 | Allocator / Challenger | done, tested offline; runs on Groq free tier (needs a free key) |
 | Orchestration (decision cycle) | done, tested offline with a fake gateway |
 | Scheduler (cadence) | done |
+| Autonomous runner (main loop) | done, validated live in dry-run via the CLI |
 | Equal-weight benchmark and allocation delta | done |
 | Live MCP gateway (runtime seam) | built; read path validated live, order path awaits market open |
 | Shock simulations | not started |
@@ -231,7 +232,7 @@ happens. A submit call that times out is never assumed either way: the
 idempotency key lets a status re-query stand in for a lost response, because the
 truth is the order record, not the return value of the call that created it.
 
-### Cadence
+### Cadence and the runner
 
 Two cycles per trading day, 10:00 and 14:00 ET -- 30 minutes after the open and
 two hours before the close, avoiding the widest-spread windows. The scheduler is
@@ -239,6 +240,21 @@ pure: given the trading dates the broker's calendar reports and the current
 time, it computes the next decision moment. It never hardcodes dates, so the
 Labor Day (Sep 7) and weekend gaps are handled simply by their absence from the
 calendar.
+
+`runner.py` is the autonomous loop (PRD 2.5): read the calendar, wait for the
+next slot, open a fresh broker session, run one cycle, close, repeat. A broker
+session opened per cycle means a dropped connection costs one cycle, not the
+run; a cycle that raises is logged and the loop continues; SIGINT/SIGTERM stop
+gracefully between cycles. Its clock and sleep are injectable, so the whole
+schedule is tested deterministically without real time.
+
+Launch it:
+
+```bash
+python -m alloc_agent.runner --dry-run                 # full pipeline, places nothing
+python -m alloc_agent.runner --once                    # one live cycle, then exit
+python -m alloc_agent.runner --stop-at 2026-09-04T16:00 # run the window, then stop
+```
 
 ## Allocation delta and rejection rate
 
