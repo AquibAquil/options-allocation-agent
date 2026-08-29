@@ -324,3 +324,26 @@ def test_forced_reductions_flags_a_breached_short_strike(tmp_path):
     forced = cycle._forced_reductions(P())
     assert BULL in forced          # short strike ~at spot -> breached -> forced
     assert BEAR not in forced      # flat, nothing to reduce
+
+
+# --- dry run (full pipeline, no placement) ---------------------------------
+
+
+def test_dry_run_plans_orders_without_placing(tmp_path):
+    """The whole pipeline runs and records intended orders, but places nothing."""
+    cycle = make_cycle(tmp_path=tmp_path)
+    gw = FakeGateway(market_open=False)  # closed -- dry run proceeds anyway
+    result = cycle.run_cycle(gw, cycle_id="c1", asof=ASOF, dry_run=True)
+    assert result.status == orch.DRY_RUN
+    assert gw.placed == []                        # nothing placed
+    order = result.orders[0]
+    assert order["dry_run"] is True
+    assert order["submitted"] is False
+    assert order["strategy"] == BULL
+    assert "spec" in order and "summary" in order
+
+
+def test_dry_run_ignores_market_closed(tmp_path):
+    cycle = make_cycle(tmp_path=tmp_path)
+    result = cycle.run_cycle(FakeGateway(market_open=False), cycle_id="c1", asof=ASOF, dry_run=True)
+    assert result.status != orch.SKIPPED_MARKET_CLOSED

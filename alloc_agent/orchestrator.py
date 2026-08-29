@@ -39,6 +39,7 @@ TRADED = "traded"
 HELD_NO_CHANGE = "held_no_change"
 HELD_ON_FAILURE = "held_on_failure"
 SKIPPED_MARKET_CLOSED = "skipped_market_closed"
+DRY_RUN = "dry_run"
 
 
 @dataclass
@@ -92,20 +93,35 @@ class DecisionCycle:
     # -- the cycle ----------------------------------------------------------
 
     def run_cycle(
-        self, gateway: BrokerGateway, *, cycle_id: str, asof: dt.date | None = None
+        self,
+        gateway: BrokerGateway,
+        *,
+        cycle_id: str,
+        asof: dt.date | None = None,
+        dry_run: bool = False,
     ) -> CycleResult:
+        """Run one decision cycle.
+
+        dry_run drives the entire pipeline with live components -- evidence,
+        allocator, challenger, gates, sizing against the live chain -- but never
+        places an order: it records what it WOULD trade. It also proceeds when
+        the market is closed, so the full system can be validated and demoed off
+        hours. Nothing it does can move the account.
+        """
         asof = asof or dt.date.today()
         result = CycleResult(cycle_id=cycle_id, asof=asof.isoformat(), status=HELD_ON_FAILURE)
 
-        # 0. Trade only when the market is open, on the broker's clock.
-        try:
-            if not gateway.is_market_open():
-                result.status = SKIPPED_MARKET_CLOSED
-                result.reason = "market closed"
+        # 0. Trade only when the market is open, on the broker's clock. A dry run
+        # skips this gate on purpose -- it places nothing regardless.
+        if not dry_run:
+            try:
+                if not gateway.is_market_open():
+                    result.status = SKIPPED_MARKET_CLOSED
+                    result.reason = "market closed"
+                    return self._finish(result)
+            except BrokerError as exc:
+                result.reason = f"clock check failed: {exc}"
                 return self._finish(result)
-        except BrokerError as exc:
-            result.reason = f"clock check failed: {exc}"
-            return self._finish(result)
 
         # 1. Evidence. Any failure here holds.
         try:
@@ -146,11 +162,15 @@ class DecisionCycle:
 
         # 6. Size and 7. execute the strategies that trade.
         result.sizing, result.orders = self._size_and_execute(
-            gateway, packet, gated, asof=asof
+            gateway, packet, gated, asof=asof, dry_run=dry_run
         )
 
         traded = any(o.get("submitted") for o in result.orders)
-        if traded:
+        would_trade = any(o.get("dry_run") for o in result.orders)
+        if dry_run:
+            result.status = DRY_RUN
+            result.reason = f"dry run: {len(result.orders)} order(s) planned, none placed"
+        elif traded:
             result.status = TRADED
         elif gated.traded_keys:
             result.status = HELD_ON_FAILURE
@@ -204,7 +224,13 @@ class DecisionCycle:
         return frozenset(forced)
 
     def _size_and_execute(
-        self, gateway: BrokerGateway, packet: pk.EvidencePacket, gated, *, asof: dt.date
+        self,
+        gateway: BrokerGateway,
+        packet: pk.EvidencePacket,
+        gated,
+        *,
+        asof: dt.date,
+        dry_run: bool = False,
     ) -> tuple[dict, list]:
         sizing_out: dict = {}
         orders: list = []
@@ -218,9 +244,18 @@ class DecisionCycle:
             strategy = BY_KEY[key]
             entry: dict = {"strategy": key, "target_alloc": target}
 
-            # Pull the chain and apply fixed selection.
+            # Pull the chain, narrowed to the strategy's expiry window so the
+            # target-DTE contracts are actually in the response (an unfiltered
+            # chain is truncated by the server's limit and can miss them), then
+            # apply fixed selection.
+            exp_gte = (asof + dt.timedelta(days=strategy.dte_min)).isoformat()
+            exp_lte = (asof + dt.timedelta(days=strategy.dte_max)).isoformat()
             try:
-                chain = gateway.option_chain(self.symbol)
+                chain = gateway.option_chain(
+                    self.symbol,
+                    expiration_date_gte=exp_gte,
+                    expiration_date_lte=exp_lte,
+                )
                 selection = select(chain, strategy, asof=asof)
                 quote = build_sizing_quote(selection, strategy)
                 plan = size_strategy(
@@ -242,9 +277,31 @@ class DecisionCycle:
             if plan.is_blocked or plan.contract_delta == 0:
                 continue
 
-            # Build and place the order; verify actual status after.
+            # Build the order. A dry run stops here, recording the intended
+            # trade without placing it.
             try:
                 spec = build_order(plan, selection.legs, intent=plan.action)
+            except ValueError as exc:
+                orders.append(
+                    {"strategy": key, "submitted": False, "error": f"{type(exc).__name__}: {exc}"}
+                )
+                continue
+
+            if dry_run:
+                orders.append(
+                    {
+                        "strategy": key,
+                        "submitted": False,
+                        "dry_run": True,
+                        "client_order_id": spec.client_order_id,
+                        "spec": spec.to_mcp_kwargs(),
+                        "summary": spec.human_summary(),
+                    }
+                )
+                continue
+
+            # Place the order; verify actual status after.
+            try:
                 submit = gateway.place_order(spec)
                 report = verify_after_submit(gateway, spec, submit)
                 orders.append(
