@@ -32,8 +32,13 @@ Built for the Alpaca AI Trading Agents Hackathon, 28 Aug to 4 Sep 2026.
 | Alpaca MCP server | connected, live-verified |
 | Execution + contract selection | done, verified on a real chain |
 | Allocator / Challenger | done, tested offline; live run needs a Claude credential |
-| Orchestration / scheduler | not started |
-| Equal-weight benchmark and allocation delta | not started |
+| Orchestration (decision cycle) | done, tested offline with a fake gateway |
+| Scheduler (cadence) | done |
+| Equal-weight benchmark and allocation delta | done |
+| Live MCP gateway (runtime seam) | interface done; real Alpaca-MCP client needs live wiring |
+| Shock simulations | not started |
+| Demo screen | not started |
+| VPS deployment | not started |
 
 Order of work follows PRD 4.2: evidence engine first, then one strategy end to end
 through MCP, then the models, then the remaining two strategies, then the VPS.
@@ -172,6 +177,67 @@ workload identity). A missing credential surfaces as `ModelUnavailable`, which
 upstream means hold the last valid allocation and do not trade -- the same as
 any other model failure (PRD 2.5). The unattended VPS run should use an API key;
 a subscription profile works for local development.
+
+## The decision cycle
+
+One cycle gathers evidence, asks the allocator, lets the challenger attack the
+proposal, resolves the verdict, enforces the hard gates, sizes, and executes --
+logging every step to `logs/cycles.jsonl`. It runs twice a trading day on the
+broker's clock.
+
+The organising principle is PRD 2.5's failure rule: **hold the last valid
+allocation**. A model call that fails or returns malformed output, a broker call
+that errors, an order whose status cannot be confirmed -- none of these may move
+the portfolio. Every stage is wrapped so the fallback is always "do nothing and
+log why". Most of the orchestrator's test suite is failure paths for exactly
+this reason, because those are the tests that protect real capital.
+
+The cycle is pure given a `BrokerGateway`, an `Allocator`, and a `Challenger`,
+so the whole flow -- clean trade and every failure branch -- is tested offline
+with fakes and the real captured QQQ chain. The only live seam is the gateway.
+
+### The broker seam
+
+Every Alpaca interaction goes through the `BrokerGateway` interface: clock,
+account, positions, bars, chain, order placement, order status. The real
+implementation drives the official Alpaca MCP server through the `mcp` Python
+client, so the system uses MCP as its interface (PRD 2.6) while still running
+unattended (PRD 2.5) -- MCP is a protocol, and a Python program can be an MCP
+client, it does not have to be a chat client. That real gateway is the one part
+that must be validated against the live server rather than a fixture.
+
+After every submit the order's ACTUAL status is re-checked before anything else
+happens. A submit call that times out is never assumed either way: the
+idempotency key lets a status re-query stand in for a lost response, because the
+truth is the order record, not the return value of the call that created it.
+
+### Cadence
+
+Two cycles per trading day, 10:00 and 14:00 ET -- 30 minutes after the open and
+two hours before the close, avoiding the widest-spread windows. The scheduler is
+pure: given the trading dates the broker's calendar reports and the current
+time, it computes the next decision moment. It never hardcodes dates, so the
+Labor Day (Sep 7) and weekend gaps are handled simply by their absence from the
+calendar.
+
+## Allocation delta and rejection rate
+
+The headline metric (PRD 2.8): does adaptive AI allocation beat equal weighting
+across the same three strategies? Both portfolios trade the same strategies with
+the same fixed timing, so the delta is fully determined by the weights and each
+strategy's per-unit return. Returns compound rather than sum -- up 2% then down
+2% is a loss, not flat. The delta is reported regardless of sign.
+
+The rejection rate -- the share of proposals the challenger modified or rejected
+-- is reported too. If the challenger approves nearly everything, that is the
+finding, not something to hide.
+
+**Known limitation, flagged honestly.** For a strategy the actual portfolio does
+not hold, its per-unit return is currently taken as zero rather than marked from
+a fixed-selection shadow. That biases the delta toward the AI when it declines
+to fund a strategy that equal weight would have funded -- the exact "trivial
+positive delta" risk called out in the design (Part 3). Shadow marking of unheld
+strategies is the documented next refinement.
 
 ## Allocation semantics
 
