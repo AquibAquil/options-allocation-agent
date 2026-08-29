@@ -35,7 +35,7 @@ Built for the Alpaca AI Trading Agents Hackathon, 28 Aug to 4 Sep 2026.
 | Orchestration (decision cycle) | done, tested offline with a fake gateway |
 | Scheduler (cadence) | done |
 | Equal-weight benchmark and allocation delta | done |
-| Live MCP gateway (runtime seam) | interface done; real Alpaca-MCP client needs live wiring |
+| Live MCP gateway (runtime seam) | built; read path validated live, order path awaits market open |
 | Shock simulations | not started |
 | Demo screen | not started |
 | VPS deployment | not started |
@@ -211,11 +211,20 @@ with fakes and the real captured QQQ chain. The only live seam is the gateway.
 
 Every Alpaca interaction goes through the `BrokerGateway` interface: clock,
 account, positions, bars, chain, order placement, order status. The real
-implementation drives the official Alpaca MCP server through the `mcp` Python
-client, so the system uses MCP as its interface (PRD 2.6) while still running
-unattended (PRD 2.5) -- MCP is a protocol, and a Python program can be an MCP
-client, it does not have to be a chat client. That real gateway is the one part
-that must be validated against the live server rather than a fixture.
+implementation (`broker_mcp.py`) drives the official Alpaca MCP server through
+the `mcp` Python client, so the system uses MCP as its interface (PRD 2.6) while
+still running unattended (PRD 2.5) -- MCP is a protocol, and a Python program can
+be an MCP client, it does not have to be a chat client.
+
+The server boots in a few seconds and its tools are fast once up, so the session
+is persistent: a background thread owns an asyncio loop and keeps one stdio
+session open for the gateway's lifetime, and the synchronous gateway methods
+marshal onto it. Its read path (clock, account, 252-day bars, positions, chain)
+is validated live against the running server; order placement is validated once
+the market is open. Position legs are mapped back to the strategy that opened
+them using our own order history as the source of truth -- every order's
+client_order_id carries the strategy key, so the mapping survives a restart with
+no local state file.
 
 After every submit the order's ACTUAL status is re-checked before anything else
 happens. A submit call that times out is never assumed either way: the
