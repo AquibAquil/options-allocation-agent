@@ -17,33 +17,6 @@ Built for the Alpaca AI Trading Agents Hackathon, 28 Aug to 4 Sep 2026.
 
 ---
 
-## Status
-
-| Component | State |
-| --- | --- |
-| Strategy library and theses | done |
-| Correlation precompute (PRD 2.4) | done, needs a live 252-day pull |
-| Daily bars + cache | done, blocked on Alpaca credentials |
-| IV reference series (CBOE VXN) | done, live |
-| Evidence metrics | done |
-| Evidence packet assembly | done, awaiting live position/chain feed |
-| Hard risk gates | done |
-| Sizing and chain verification | done |
-| Alpaca MCP server | connected, live-verified |
-| Execution + contract selection | done, verified on a real chain |
-| Allocator / Challenger | done, tested offline; runs on Groq free tier (needs a free key) |
-| Orchestration (decision cycle) | done, tested offline with a fake gateway |
-| Scheduler (cadence) | done |
-| Autonomous runner (main loop) | done, validated live in dry-run via the CLI |
-| Equal-weight benchmark and allocation delta | done |
-| Live MCP gateway (runtime seam) | built; read path validated live, order path awaits market open |
-| Shock simulations | not started |
-| Demo screen | not started |
-| VPS deployment | not started |
-
-Order of work follows PRD 4.2: evidence engine first, then one strategy end to end
-through MCP, then the models, then the remaining two strategies, then the VPS.
-
 ## Quick start
 
 ```bash
