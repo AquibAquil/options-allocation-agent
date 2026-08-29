@@ -29,9 +29,10 @@ Built for the Alpaca AI Trading Agents Hackathon, 28 Aug to 4 Sep 2026.
 | Evidence packet assembly | done, awaiting live position/chain feed |
 | Hard risk gates | done |
 | Sizing and chain verification | done |
-| Alpaca MCP server | installed and registered, needs credentials |
-| Execution through MCP | not started |
-| Allocator / Challenger | not started |
+| Alpaca MCP server | connected, live-verified |
+| Execution + contract selection | done, verified on a real chain |
+| Allocator / Challenger | done, tested offline; live run needs a Claude credential |
+| Orchestration / scheduler | not started |
 | Equal-weight benchmark and allocation delta | not started |
 
 Order of work follows PRD 4.2: evidence engine first, then one strategy end to end
@@ -118,6 +119,59 @@ this of the strangle without naming a number. Rather than invent one, the floor
 is derived: at n contracts holding a fraction f of the budget, one contract
 moves the allocation by f/n, and that step should be no larger than the 5
 percentage point threshold below which the system does not trade at all.
+
+## Allocator and Challenger
+
+Two model calls, and the only two in the system. Everything around them --
+building the prompt, validating and parsing the response, resolving a
+challenge, feeding the result to the gates -- is pure and tested offline with a
+fake client. The single seam where a network call happens is `llm.py`.
+
+The **allocator** receives the evidence packet plus each strategy's thesis and
+returns target shares of the risk budget with written reasoning, as structured
+JSON. It is asked to reconcile evidence against each thesis and judge
+risk-adjusted opportunity across the portfolio. It is never asked to forecast
+prices, size positions, or emit a confidence score. Its system prompt repeats
+the most expensive error in bold terms: a strategy losing money is not the same
+as its thesis being invalidated -- read the not_invalidation field.
+
+The **challenger** attacks the proposal on the same evidence and returns
+APPROVE, MODIFY, or REJECT with the specific evidence responsible. It is one
+model reviewing another with no ground truth and a known bias toward agreement,
+so it is a filter that improves the average decision, not certification of any
+one. Its rejection rate is reported regardless. It is tuned against performance
+chasing, and its own blind spot -- endorsing a premature cut of a bleeding
+strategy -- is named in its prompt.
+
+APPROVE uses the proposal, MODIFY uses the challenger's corrected numbers,
+REJECT holds the current allocation. Whatever results then goes through the hard
+risk gates, which correct anything the models let by.
+
+### Determinism and "temperature zero"
+
+PRD 2.1 specifies temperature zero for reproducibility. That parameter no longer
+exists on the current Opus models (it returns a 400). Determinism is pursued the
+modern way instead: the response is constrained to a JSON schema, and the
+reasoning lands in structured fields rather than free-form prose. Exact
+bit-for-bit reproducibility is not achievable with these models; the audit trail
+-- logged evidence, reasoning, and decision -- is what provides accountability.
+
+### No confidence scores, enforced twice
+
+PRD forbids model confidence numbers: they look calibrated and are not, and if
+one ever multiplied into sizing it would drive real capital off a meaningless
+figure. The schemas have no confidence field, and the parsers reject any payload
+that smuggles one in under `confidence`, `certainty`, `probability`, or
+`conviction`.
+
+### Credentials
+
+`llm.py` never reads or stores a credential; it defers to the SDK's resolution
+chain (an `ANTHROPIC_API_KEY`, an `ant auth login` subscription profile, or
+workload identity). A missing credential surfaces as `ModelUnavailable`, which
+upstream means hold the last valid allocation and do not trade -- the same as
+any other model failure (PRD 2.5). The unattended VPS run should use an API key;
+a subscription profile works for local development.
 
 ## Allocation semantics
 

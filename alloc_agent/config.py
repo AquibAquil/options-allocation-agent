@@ -54,9 +54,17 @@ MARKET_TZ = "America/New_York"
 CORRELATION_LOOKBACK_DAYS = 252
 
 # --- Model calls (PRD 2.1) -------------------------------------------------
+# PRD 2.1 specifies "temperature zero" for reproducibility. That parameter no
+# longer exists on the current Opus models -- temperature/top_p/top_k are
+# removed and return a 400. Determinism is pursued the modern way instead:
+# structured JSON output constrained by a schema, with the model's reasoning
+# captured in structured fields rather than free-form prose. Exact bit-for-bit
+# reproducibility is not achievable with these models; the audit trail (logged
+# evidence, reasoning, and decision) is what provides accountability, which is
+# what the PRD actually needs.
 ALLOCATOR_MODEL = "claude-opus-5"
 CHALLENGER_MODEL = "claude-opus-5"
-MODEL_TEMPERATURE = 0.0
+MODEL_MAX_TOKENS = 16000
 
 # --- Paths -----------------------------------------------------------------
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
