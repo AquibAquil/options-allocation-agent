@@ -82,25 +82,35 @@ CORRELATION_LOOKBACK_DAYS = 252
 
 # --- Model calls (PRD 2.1) -------------------------------------------------
 # The allocator and challenger run on a configurable provider. Default is Groq
-# (free tier, Llama 3.3 70B): the Claude subscription does not cover the raw
-# API, and this project declines to pay for API credits. The model call is
-# isolated behind the ModelClient interface, so the provider is a one-line
-# config switch and nothing downstream changes.
+# (free tier, GPT-OSS 120B): the Claude subscription does not cover the raw API,
+# and this project declines to pay for API credits. The model call is isolated
+# behind the ModelClient interface, so the provider is a one-line config switch
+# and nothing downstream changes.
 #
-# PRD 2.1 asks for "temperature zero" for reproducibility. On Groq's Llama
-# models temperature IS available and is set to 0, which honours that intent
-# more directly than the current Opus models (where the parameter is removed).
+# PRD 2.1 asks for "temperature zero" for reproducibility. On Groq's open models
+# temperature IS available and is set to 0, which honours that intent more
+# directly than the current Opus models (where the parameter is removed).
 # Structured output is still requested; the parsers validate defensively either
 # way, so a malformed response holds rather than trades.
 MODEL_PROVIDER = os.environ.get("MODEL_PROVIDER", "groq").lower()
-MODEL_MAX_TOKENS = 16000
+
+# The allocator/challenger outputs are small JSON objects. The free tier caps a
+# single request's input+max_tokens at the 8000 tokens/min limit, so this is
+# kept modest -- enough for the JSON plus a reasoning model's working tokens,
+# small enough that one request fits the window with the full evidence packet.
+MODEL_MAX_TOKENS = int(os.environ.get("MODEL_MAX_TOKENS", "3000"))
+
+# Retries for a 429 (rate/token-per-minute exceeded), which happens when both
+# cycle calls land in the same minute on the free tier. Honours retry-after.
+MODEL_MAX_RETRIES = 4
+MODEL_RETRY_CAP_SECONDS = 70.0
 
 # Anthropic (used only if MODEL_PROVIDER=anthropic and the org has API credits).
 ALLOCATOR_MODEL = "claude-opus-5"
 CHALLENGER_MODEL = "claude-opus-5"
 
 # Groq (default). Free API key from console.groq.com; no card required.
-GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 

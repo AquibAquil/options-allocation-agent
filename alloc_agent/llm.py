@@ -134,6 +134,49 @@ class GroqClient:
     def __init__(self, model: str = config.GROQ_MODEL):
         self.model = model
 
+    def _post_with_retry(self, body: dict) -> dict:
+        """POST to Groq, retrying a 429 with the server's retry-after.
+
+        The free tier is 8000 tokens/min. When a cycle's allocator and
+        challenger calls land in the same minute, the second gets a 429; the
+        4-hour cadence means waiting out the window is free. A 413 (a single
+        request larger than the whole per-minute budget) is not retryable and
+        signals max_tokens is set too high -- surfaced as a hold, not a retry.
+        """
+        import time
+
+        url = f"{config.GROQ_BASE_URL}/chat/completions"
+        headers = {"Authorization": f"Bearer {config.GROQ_API_KEY}"}
+        last = ""
+        for attempt in range(config.MODEL_MAX_RETRIES):
+            try:
+                with httpx.Client(timeout=90.0) as client:
+                    resp = client.post(url, headers=headers, json=body)
+            except Exception as exc:
+                raise ModelUnavailable(
+                    f"groq call failed: {type(exc).__name__}: {exc}"
+                ) from exc
+
+            if resp.status_code == 200:
+                try:
+                    return resp.json()
+                except Exception as exc:
+                    raise ModelUnavailable(f"groq returned non-JSON envelope: {exc}") from exc
+
+            if resp.status_code == 429 and attempt < config.MODEL_MAX_RETRIES - 1:
+                retry_after = resp.headers.get("retry-after")
+                try:
+                    wait = float(retry_after) if retry_after else 2.0 * (attempt + 1)
+                except ValueError:
+                    wait = 2.0 * (attempt + 1)
+                time.sleep(min(wait + 0.5, config.MODEL_RETRY_CAP_SECONDS))
+                last = resp.text[:200]
+                continue
+
+            raise ModelUnavailable(f"groq call failed ({resp.status_code}): {resp.text[:200]}")
+
+        raise ModelUnavailable(f"groq rate limit not cleared after retries: {last}")
+
     def complete_json(
         self, *, system: str, user: str, schema: dict, max_tokens: int = config.MODEL_MAX_TOKENS
     ) -> ModelResponse:
@@ -158,22 +201,7 @@ class GroqClient:
             "max_tokens": max_tokens,
         }
 
-        try:
-            with httpx.Client(timeout=90.0) as client:
-                resp = client.post(
-                    f"{config.GROQ_BASE_URL}/chat/completions",
-                    headers={"Authorization": f"Bearer {config.GROQ_API_KEY}"},
-                    json=body,
-                )
-            if resp.status_code != 200:
-                raise ModelUnavailable(
-                    f"groq call failed ({resp.status_code}): {resp.text[:200]}"
-                )
-            payload = resp.json()
-        except ModelUnavailable:
-            raise
-        except Exception as exc:
-            raise ModelUnavailable(f"groq call failed: {type(exc).__name__}: {exc}") from exc
+        payload = self._post_with_retry(body)
 
         choices = payload.get("choices") or []
         if not choices:
