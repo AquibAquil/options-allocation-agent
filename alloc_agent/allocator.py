@@ -67,6 +67,17 @@ strategy means it holds 40% of the permitted max-loss exposure. Allocations are 
 fractions in [0, 1] and should sum to at most 1.0; holding budget back (summing \
 to less than 1.0) is a legitimate, sometimes correct, decision.
 
+CRITICAL -- each number you output is the TOTAL target share you want that \
+strategy to hold AFTER this decision: the desired end state, not a change and \
+not an addition. Each strategy's current allocation is given in the evidence as \
+its starting point. Your number REPLACES it. If a strategy currently holds 35% \
+and you still want it at 35%, output 0.35 -- not 0. Never treat the current \
+allocation as already spent, and never allocate only the "leftover" budget on \
+top of the held positions: propose the full target book from scratch every time, \
+as if deciding all three positions afresh. The sum of your three targets is the \
+whole book's max-loss exposure, capped at 1.0 -- it is not the amount of new \
+budget to add.
+
 Your one job is to reconcile the evidence against each strategy's written \
 thesis and its stated invalidation conditions, and to judge risk-adjusted \
 opportunity relative to the rest of the portfolio -- accounting for correlation \
@@ -129,11 +140,14 @@ def build_user_prompt(packet: EvidencePacket) -> str:
         "deterministically upstream; treat it as ground truth and use nothing "
         "else.\n\n"
         f"{json.dumps(payload, indent=2, default=str)}\n\n"
-        "Decide the target allocation for each strategy now. For each, state in "
-        "one or two sentences the specific evidence that supports your share and "
-        "how it bears on that strategy's thesis and invalidation conditions. "
-        "Then give a portfolio-level rationale that addresses correlation "
-        "between the strategies and concentration of the budget."
+        "Decide the TOTAL target allocation for each strategy now -- the full "
+        "share of the risk budget you want it to hold after this decision, "
+        "replacing whatever it currently holds (its current share is in the "
+        "evidence). For each, state in one or two sentences the specific "
+        "evidence that supports your target and how it bears on that strategy's "
+        "thesis and invalidation conditions. Then give a portfolio-level "
+        "rationale that addresses correlation between the strategies and "
+        "concentration of the budget."
     )
 
 

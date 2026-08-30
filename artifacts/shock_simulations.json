@@ -1,0 +1,449 @@
+{
+  "simulated": true,
+  "scenarios": [
+    {
+      "name": "baseline_quiet",
+      "regime": "Quiet, low IV (the live window)",
+      "description": "Low realised vol, IV in the 20th percentile, both spreads' short strikes ~1.9 sigma away and mildly profitable, strangle bleeding gently. This is roughly what the four-day live window looks like.",
+      "expectation": "Fund both spreads to harvest the IV>RV premium; keep the strangle funded despite its small loss because protection is cheap (IV 20th pct) -- do NOT cut it for bleeding.",
+      "current_allocation": {
+        "bull_put_spread": 0.35,
+        "bear_call_spread": 0.35,
+        "long_strangle": 0.2
+      },
+      "simulated": true,
+      "proposal": {
+        "allocations": {
+          "bull_put_spread": 0.35,
+          "bear_call_spread": 0.35,
+          "long_strangle": 0.3
+        },
+        "reasoning": {
+          "bull_put_spread": "The short put is ~1.9\u03c3 below spot and spot is comfortably above it; implied vol (0.175) exceeds realized (0.145) and iv/rv ratio is 1.21, so the thesis remains valid and no invalidation triggers.",
+          "bear_call_spread": "The short call sits ~1.9\u03c3 above spot, keeping a wide buffer; implied vol still above realized and spot is far from the short strike, so the bear\u2011call thesis holds without invalidation.",
+          "long_strangle": "Implied\u2011vol percentile is only 20\u202f% (cheap protection) and iv still exceeds realized, meaning conditions for a volatility expansion remain; the loss is expected bleed, not an invalidation."
+        },
+        "portfolio_rationale": "Bull put and bear call spreads are strongly negatively correlated (\u20110.88), providing natural hedge, while the long strangle is only modestly correlated and adds pure volatility\u2011shock exposure. Using the remaining 0.1 of risk budget to raise the long strangle to 0.30 strengthens that unique upside without breaching per\u2011strategy (0.45) or total (1.0) limits, keeping the portfolio diversified and within all constraints.",
+        "model": "openai/gpt-oss-120b",
+        "usage": {
+          "queue_time": 0.359591176,
+          "prompt_tokens": 2809,
+          "prompt_time": 0.163266215,
+          "completion_tokens": 1174,
+          "completion_time": 2.432910301,
+          "total_tokens": 3983,
+          "total_time": 2.596176516,
+          "completion_tokens_details": {
+            "reasoning_tokens": 884
+          }
+        }
+      },
+      "challenge": {
+        "verdict": "APPROVE",
+        "critique": "All three allocations are supported by the evidence: the bull put spread has a short strike ~1.9\u03c3 below spot, spot is comfortably above it, and implied vol (0.175) exceeds realized vol (0.145) with iv/rv ratio 1.21, so no invalidation triggers; the bear call spread has a short strike ~1.9\u03c3 above spot with the same vol premium conditions, also satisfying its thesis; the long strangle benefits from a low implied\u2011vol percentile (20\u202f%) and iv still above rv, and its unrealised loss is covered by the not_invalidation clause, so the loss does not invalidate the thesis. The allocations respect all constraints (per\u2011strategy \u22640.45, total \u22641.0, and use the remaining risk\u2011budget).",
+        "evidence_cited": [
+          "bull_put_spread.short_strike_distance_sigma",
+          "bull_put_spread.iv_rv.ratio",
+          "bear_call_spread.short_strike_distance_sigma",
+          "bear_call_spread.iv_rv.ratio",
+          "long_strangle.implied_vol_percentile_252d",
+          "long_strangle.iv_rv.ratio",
+          "long_strangle.not_invalidation"
+        ],
+        "modified_allocations": {
+          "bull_put_spread": 0.35,
+          "bear_call_spread": 0.35,
+          "long_strangle": 0.3
+        },
+        "model": "openai/gpt-oss-120b",
+        "usage": {
+          "queue_time": 0.36638776,
+          "prompt_tokens": 3044,
+          "prompt_time": 0.122058698,
+          "completion_tokens": 1090,
+          "completion_time": 2.254164763,
+          "total_tokens": 4134,
+          "total_time": 2.376223461,
+          "completion_tokens_details": {
+            "reasoning_tokens": 802
+          }
+        }
+      },
+      "effective_source": "allocator_proposal",
+      "final_allocation": {
+        "bull_put_spread": 0.35,
+        "bear_call_spread": 0.35,
+        "long_strangle": 0.3
+      },
+      "gate_adjustments": []
+    },
+    {
+      "name": "volatility_shock",
+      "regime": "Volatility expansion",
+      "description": "IV spikes to the 92nd percentile, realised vol jumps above implied, both spreads' short strikes are now ~1.1-1.2 sigma away and deep in the red, the long strangle has paid off sharply.",
+      "expectation": "Cut both short-vol spreads hard -- their short strikes are threatened and RV now exceeds IV, so the premium no longer pays for the risk. The strangle is the winner, but IV at the 92nd pct means adding fresh convexity is expensive; holding the existing position is reasonable, chasing it less so.",
+      "current_allocation": {
+        "bull_put_spread": 0.35,
+        "bear_call_spread": 0.35,
+        "long_strangle": 0.2
+      },
+      "simulated": true,
+      "proposal": {
+        "allocations": {
+          "bull_put_spread": 0.3,
+          "bear_call_spread": 0.4,
+          "long_strangle": 0.0
+        },
+        "reasoning": {
+          "bull_put_spread": "Realized volatility (0.34) exceeds implied volatility (0.30) and the short strike is only 1.1\u03c3 below spot while the market has been falling (1\u2011day return \u20133%). These satisfy the invalidation triggers, so we reduce its allocation from 0.35 to 0.30.",
+          "bear_call_spread": "Although realized volatility now matches implied, the short strike sits 1.2\u03c3 above spot and the recent down\u2011trend keeps the upside barrier comfortably out of reach, so the thesis still holds and we keep a higher exposure at 0.40.",
+          "long_strangle": "Implied\u2011vol percentile is 92%, meaning protection is no longer cheap, which meets the long\u2011strangle invalidation condition; therefore we set its allocation to 0."
+        },
+        "portfolio_rationale": "Bull put and bear call spreads are strongly negatively correlated (\u20110.88), providing natural hedge and limiting concentration; keeping both preserves diversification while the long strangle is removed due to expensive protection. The total allocation of 0.70 stays well below the 1.0 limit and leaves a safety buffer in the risk budget.",
+        "model": "openai/gpt-oss-120b",
+        "usage": {
+          "queue_time": 0.366761431,
+          "prompt_tokens": 2828,
+          "prompt_time": 0.154547679,
+          "completion_tokens": 2024,
+          "completion_time": 4.181287935,
+          "total_tokens": 4852,
+          "total_time": 4.335835614,
+          "completion_tokens_details": {
+            "reasoning_tokens": 1744
+          }
+        }
+      },
+      "challenge": {
+        "verdict": "MODIFY",
+        "critique": "The bear call spread allocation is increased to 0.40 despite clear invalidation signals: realized volatility (0.34) exceeds implied volatility (0.30) and the iv\u2011rv spread is negative (-0.04), which matches the strategy's invalidation condition of realized volatility rising to meet implied. Therefore the allocation should be reduced, not increased. Bull put spread reduction is justified, and long strangle removal is justified by the high implied\u2011vol percentile (92%).",
+        "evidence_cited": [
+          "strategies[1].realized_vol",
+          "strategies[1].iv_rv.spread",
+          "strategies[1].invalidation"
+        ],
+        "modified_allocations": {
+          "bull_put_spread": 0.3,
+          "bear_call_spread": 0.25,
+          "long_strangle": 0.0
+        },
+        "model": "openai/gpt-oss-120b",
+        "usage": {
+          "queue_time": 0.044835911,
+          "prompt_tokens": 3054,
+          "prompt_time": 0.131552233,
+          "completion_tokens": 1522,
+          "completion_time": 3.18501229,
+          "total_tokens": 4576,
+          "total_time": 3.316564523,
+          "completion_tokens_details": {
+            "reasoning_tokens": 1342
+          }
+        }
+      },
+      "effective_source": "challenger_modified",
+      "final_allocation": {
+        "bull_put_spread": 0.3,
+        "bear_call_spread": 0.25,
+        "long_strangle": 0.0
+      },
+      "gate_adjustments": []
+    },
+    {
+      "name": "directional_selloff_breach",
+      "regime": "Sharp selloff, bull put breached",
+      "description": "A hard down move puts spot essentially at the bull put's short strike (0.1 sigma away) with the position deeply underwater. The bear call is now far out of the money and profitable; the strangle has gained on the move.",
+      "expectation": "Cut the bull put decisively -- its short strike is breached, which is genuine invalidation, not noise. This is the case a defined-risk spread caps but does not welcome. The bear call is safe; the strangle earned its keep.",
+      "current_allocation": {
+        "bull_put_spread": 0.4,
+        "bear_call_spread": 0.3,
+        "long_strangle": 0.2
+      },
+      "simulated": true,
+      "proposal": {
+        "allocations": {
+          "bull_put_spread": 0.0,
+          "bear_call_spread": 0.35,
+          "long_strangle": 0.25
+        },
+        "reasoning": {
+          "bull_put_spread": "Short strike is only 0.1 sigma away, unrealized loss is -85% of max loss and drawdown 0.9, while implied vol (0.27) is below realized vol (0.28); spot is effectively at the short strike, meeting the invalidation conditions, so we drop the position.",
+          "bear_call_spread": "Short strike is 2.6 sigma away providing a large buffer, the position is +40% of max loss, but realized vol now exceeds implied vol, which is an invalidation signal; we keep a modest exposure at 0.35 to stay within the budget while respecting the strike buffer.",
+          "long_strangle": "Implied\u2011vol percentile is 78% (high), indicating protection is no longer cheap, satisfying an invalidation condition; however the position is +70% of max loss and offers the only long\u2011vol hedge with negative correlation to the bull put, so we retain a slightly higher allocation of 0.25."
+        },
+        "portfolio_rationale": "Removing the bull put eliminates a strategy that is near its short strike and losing heavily, reducing concentration risk. The bear call remains with a safe strike buffer despite a modest IV\u2011RV mismatch, and the long strangle provides diversification and a volatility hedge, offsetting the short\u2011vol exposure. Total allocation (0.60) stays well below the 1.0 limit and each strategy is under the 0.45 per\u2011strategy cap, keeping the portfolio balanced and within risk\u2011budget constraints.",
+        "model": "openai/gpt-oss-120b",
+        "usage": {
+          "queue_time": 0.045214992,
+          "prompt_tokens": 2823,
+          "prompt_time": 0.134989151,
+          "completion_tokens": 2350,
+          "completion_time": 4.88767155,
+          "total_tokens": 5173,
+          "total_time": 5.022660701,
+          "completion_tokens_details": {
+            "reasoning_tokens": 1998
+          }
+        }
+      },
+      "challenge": {
+        "verdict": "MODIFY",
+        "critique": "The allocator correctly drops the bull put spread, which meets invalidation criteria (short strike only 0.1 sigma away and realized volatility exceeds implied). However, it retains allocations to the bear call spread and long strangle despite clear invalidation signals. For the bear call spread, realized volatility (0.28) now exceeds implied volatility (0.27), triggering its invalidation condition. For the long strangle, the implied\u2011volatility percentile is 78%, placing it in the upper range and violating its cheap\u2011protection requirement. Keeping these positions is driven by recent positive P&L rather than thesis validity, i.e., performance chasing. The allocations should be reduced to zero for both strategies.",
+        "evidence_cited": [
+          "market.realized_vol.5d = 0.28 > market.implied_vol = 0.27 (invalidates bear call spread)",
+          "strategies[1].invalidation contains \"realised volatility rising to meet implied\"",
+          "market.implied_vol_percentile_252d = 78.0 (invalidates long strangle)",
+          "strategies[2].invalidation contains \"implied volatility percentile has risen into the upper part of its own range\""
+        ],
+        "modified_allocations": {
+          "bull_put_spread": 0.0,
+          "bear_call_spread": 0.0,
+          "long_strangle": 0.0
+        },
+        "model": "openai/gpt-oss-120b",
+        "usage": {
+          "queue_time": 0.046696948,
+          "prompt_tokens": 3116,
+          "prompt_time": 0.124668051,
+          "completion_tokens": 1426,
+          "completion_time": 2.9521384729999998,
+          "total_tokens": 4542,
+          "total_time": 3.076806524,
+          "completion_tokens_details": {
+            "reasoning_tokens": 1134
+          }
+        }
+      },
+      "effective_source": "challenger_modified",
+      "final_allocation": {
+        "bull_put_spread": 0.0,
+        "bear_call_spread": 0.0,
+        "long_strangle": 0.0
+      },
+      "gate_adjustments": []
+    },
+    {
+      "name": "melt_up_breach",
+      "regime": "Sharp rally, bear call breached",
+      "description": "The mirror of the selloff: a sharp rally puts spot at the bear call's short strike, that position deep in the red, while the bull put is now safe and the strangle has gained.",
+      "expectation": "Cut the bear call -- its short strike is breached. The bull put is safe and profitable; the strangle profited from the move.",
+      "current_allocation": {
+        "bull_put_spread": 0.3,
+        "bear_call_spread": 0.4,
+        "long_strangle": 0.2
+      },
+      "simulated": true,
+      "proposal": {
+        "allocations": {
+          "bull_put_spread": 0.3,
+          "bear_call_spread": 0.0,
+          "long_strangle": 0.2
+        },
+        "reasoning": {
+          "bull_put_spread": "Short strike sits 2.6\u03c3 below spot and spot remains comfortably above it; implied volatility equals realized so premium is low but the thesis (no spot breach and sufficient strike buffer) is still intact, so keep the current 0.30 share.",
+          "bear_call_spread": "Short strike is only 0.1\u03c3 above spot, spot is essentially at the short strike, implied equals realized and the position shows a -85% loss of max\u2011loss \u2013 all matching the invalidation conditions, so allocation is set to 0.0.",
+          "long_strangle": "Implied volatility percentile is 70% (not yet in the extreme upper range) and market returns are strong, keeping the possibility of a volatility shock alive; no invalidation trigger is present, so maintain the 0.20 share."
+        },
+        "portfolio_rationale": "Removing the bear\u2011call spread eliminates the strong negative hedge with the bull put, but the remaining bull put and long strangle are still negatively correlated (\u20110.45), providing diversification. Each allocation is below the 0.45 per\u2011strategy cap and the total 0.5 uses only half of the risk budget, leaving ample buffer and avoiding concentration.",
+        "model": "openai/gpt-oss-120b",
+        "usage": {
+          "queue_time": 0.278951884,
+          "prompt_tokens": 2812,
+          "prompt_time": 0.119414679,
+          "completion_tokens": 2093,
+          "completion_time": 4.378356532,
+          "total_tokens": 4905,
+          "total_time": 4.497771211,
+          "completion_tokens_details": {
+            "reasoning_tokens": 1805
+          }
+        }
+      },
+      "challenge": {
+        "verdict": "APPROVE",
+        "critique": "All allocations are justified by the evidence. Bull put spread has a short strike 2.6\u03c3 below spot and no invalidation triggers, supporting the 0.30 share. Bear call spread\u2019s short strike is only 0.1\u03c3 above spot, meeting the invalidation condition of spot approaching the short strike, justifying a 0.0 allocation. Long strangle shows no invalidation (IV percentile 70% is not in the extreme upper range) and the thesis remains valid, supporting the 0.20 share.",
+        "evidence_cited": [
+          "bull_put_spread: short_strike_distance_sigma -2.6, unrealized_pnl positive, no spot breach",
+          "bear_call_spread: short_strike_distance_sigma 0.1 (spot at short strike), unrealized_pnl -85% of max loss, invalidation condition met",
+          "long_strangle: implied_vol_percentile_252d 70.0 (not extreme), no invalidation triggers"
+        ],
+        "modified_allocations": {
+          "bull_put_spread": 0.3,
+          "bear_call_spread": 0.0,
+          "long_strangle": 0.2
+        },
+        "model": "openai/gpt-oss-120b",
+        "usage": {
+          "queue_time": 0.367103041,
+          "prompt_tokens": 3045,
+          "prompt_time": 0.149109127,
+          "completion_tokens": 1019,
+          "completion_time": 2.122343751,
+          "total_tokens": 4064,
+          "total_time": 2.271452878,
+          "completion_tokens_details": {
+            "reasoning_tokens": 736
+          }
+        }
+      },
+      "effective_source": "allocator_proposal",
+      "final_allocation": {
+        "bull_put_spread": 0.3,
+        "bear_call_spread": 0.0,
+        "long_strangle": 0.2
+      },
+      "gate_adjustments": []
+    },
+    {
+      "name": "strangle_bleeds_protection_cheap",
+      "regime": "Strangle bleeding, IV still cheap",
+      "description": "The strangle has lost nearly half its premium over six quiet days and is the worst performer in the book. But IV sits at the 18th percentile -- protection is cheap, and the conditions for an expansion have not resolved.",
+      "expectation": "HOLD the strangle. Cutting it here is the exact error the system exists to avoid: selling convexity for a loss right before it might pay, on the basis of P&L alone. Its not_invalidation says bleeding is what it does while it waits, and protection is still cheap.",
+      "current_allocation": {
+        "bull_put_spread": 0.35,
+        "bear_call_spread": 0.35,
+        "long_strangle": 0.2
+      },
+      "simulated": true,
+      "proposal": {
+        "allocations": {
+          "bull_put_spread": 0.35,
+          "bear_call_spread": 0.35,
+          "long_strangle": 0.3
+        },
+        "reasoning": {
+          "bull_put_spread": "Implied vol (0.16) exceeds realized (0.13) giving a premium, and the short strike is 2\u03c3 below spot, so the downside buffer is intact; unrealized profit (+8% of max loss) confirms the thesis is still valid.",
+          "bear_call_spread": "Implied vol remains above realized, the short strike is 2\u03c3 above spot, and the position shows a modest unrealized gain (+6% of max loss), indicating no breach of its invalidation conditions.",
+          "long_strangle": "Implied\u2011vol percentile is only 18%, meaning protection is still cheap, and time to expiry (\u226520\u202fd) remains; despite a current loss, the thesis explicitly treats bleeding as normal, so the strategy remains justified."
+        },
+        "portfolio_rationale": "The bull put and bear call spreads are strongly negatively correlated (-0.88), providing internal hedge, while the long strangle is only weakly correlated with both, adding true volatility\u2011shock exposure. With 0.1 of the risk budget still free, shifting it to the long strangle raises its share to 0.30, enhancing diversification and capitalising on cheap volatility without breaching the 0.45 per\u2011strategy cap or the overall 1.0 limit.",
+        "model": "openai/gpt-oss-120b",
+        "usage": {
+          "queue_time": 0.278542435,
+          "prompt_tokens": 2819,
+          "prompt_time": 0.120571128,
+          "completion_tokens": 1068,
+          "completion_time": 2.223382227,
+          "total_tokens": 3887,
+          "total_time": 2.343953355,
+          "completion_tokens_details": {
+            "reasoning_tokens": 766
+          }
+        }
+      },
+      "challenge": {
+        "verdict": "MODIFY",
+        "critique": "Bull put spread and bear call spread allocations are supported by the evidence (implied vol 0.16 > realized 0.13, short strike buffers of \u00b12\u03c3, unrealized gains of 8% and 6% of max loss, and no invalidation triggers). The long strangle allocation, however, exceeds its allowed risk exposure: the evidence shows its max_loss_outstanding is $4,000, which corresponds to an allocation fraction of 0.20 (0.20\u202f\u00d7\u202f$20,000 risk budget = $4,000). Raising it to 0.30 would imply $6,000 risk, violating the strategy's max loss constraint and thus is not justified by the thesis evidence. The extra 0.10 of risk budget should be re\u2011allocated to strategies whose thesis remains valid.",
+        "evidence_cited": [
+          "strategies[0].implied_vol (0.16) > realized_vol (0.13) and short_strike_distance_sigma -2.0, unrealized_pnl 560 (pnl_frac_of_max_loss 0.08) \u2013 supports bull_put_spread",
+          "strategies[1].implied_vol (0.16) > realized_vol (0.13) and short_strike_distance_sigma 2.0, unrealized_pnl 420 (pnl_frac_of_max_loss 0.06) \u2013 supports bear_call_spread",
+          "strategies[2].max_loss_outstanding 4000.0 and allocation_frac 0.2 \u2013 defines current risk allocation for long_strangle",
+          "portfolio.risk_budget_total 20000.0 \u2013 total risk budget used to map allocation fractions to dollar risk"
+        ],
+        "modified_allocations": {
+          "bull_put_spread": 0.4,
+          "bear_call_spread": 0.4,
+          "long_strangle": 0.2
+        },
+        "model": "openai/gpt-oss-120b",
+        "usage": {
+          "queue_time": 0.359976477,
+          "prompt_tokens": 3063,
+          "prompt_time": 0.121082291,
+          "completion_tokens": 2272,
+          "completion_time": 4.7048169699999995,
+          "total_tokens": 5335,
+          "total_time": 4.825899261,
+          "completion_tokens_details": {
+            "reasoning_tokens": 1848
+          }
+        }
+      },
+      "effective_source": "challenger_modified",
+      "final_allocation": {
+        "bull_put_spread": 0.4,
+        "bear_call_spread": 0.4,
+        "long_strangle": 0.2
+      },
+      "gate_adjustments": []
+    },
+    {
+      "name": "strangle_protection_expensive",
+      "regime": "Strangle in profit, but IV now expensive",
+      "description": "The strangle is modestly profitable, but IV has risen to the 86th percentile -- protection is now expensive, so the position is paying a high price for the same convexity going forward.",
+      "expectation": "Reduce the strangle -- this is its GENUINE invalidation (protection no longer cheap), which is different from cutting it for a loss. The contrast with the bleeding-but-cheap case is the whole point: P&L is not the trigger, the IV percentile is.",
+      "current_allocation": {
+        "bull_put_spread": 0.35,
+        "bear_call_spread": 0.35,
+        "long_strangle": 0.2
+      },
+      "simulated": true,
+      "proposal": {
+        "allocations": {
+          "bull_put_spread": 0.45,
+          "bear_call_spread": 0.45,
+          "long_strangle": 0.0
+        },
+        "reasoning": {
+          "bull_put_spread": "The short put is 1.8\u03c3 below spot and implied volatility (0.29) exceeds realized (0.19) by a 1.53 ratio, so the downside insurance remains unlikely to be breached and the volatility risk premium is still present.",
+          "bear_call_spread": "The short call sits 1.8\u03c3 above spot, spot is well below it, and implied volatility remains well above realized, satisfying the upside\u2011insurance thesis without any invalidating price movement.",
+          "long_strangle": "Implied\u2011volatility percentile is 86\u202f% \u2013 in the upper range \u2013 indicating protection is no longer cheap, which meets the long\u2011strangle invalidation condition, so the allocation is reduced to zero."
+        },
+        "portfolio_rationale": "Bull put and bear call spreads are strongly negatively correlated (\u20110.88), providing directional balance while both capture the short\u2011vol premium; keeping each at the per\u2011strategy cap (0.45) uses the budget efficiently. The long strangle\u2019s cheap\u2011protection premise is invalidated, so removing it avoids an overpriced volatility bet. The resulting 0.90 total allocation stays within the 1.0 limit and leaves a modest buffer for future rebalancing.",
+        "model": "openai/gpt-oss-120b",
+        "usage": {
+          "queue_time": 0.370944964,
+          "prompt_tokens": 2817,
+          "prompt_time": 0.075687534,
+          "completion_tokens": 1962,
+          "completion_time": 5.407094804,
+          "total_tokens": 4779,
+          "total_time": 5.482782338,
+          "prompt_tokens_details": {
+            "cached_tokens": 1024
+          },
+          "completion_tokens_details": {
+            "reasoning_tokens": 1670
+          }
+        }
+      },
+      "challenge": {
+        "verdict": "MODIFY",
+        "critique": "The allocator raises the bull\u2011put spread and bear\u2011call spread allocations from their stated allocation_frac of 0.35 to 0.45 without any evidence that the thesis has become stronger. The evidence only confirms that the short strikes are still safely distant (short_strike_distance_sigma -1.8 and 1.8) and that implied volatility (0.29) exceeds realized (0.19) (evidence fields \"short_strike_distance_sigma\" and \"iv_rv.ratio\"), which supports the existing allocation but does not justify exceeding the baseline allocation_frac. This constitutes performance\u2011chasing \u2013 allocating more simply because the positions are currently unrealized\u2011profit (unrealized_pnl 350 and 280). The long\u2011strangle allocation to zero is justified because the implied\u2011volatility percentile is 86\u202f% (evidence fields \"implied_vol_percentile_252d\" and \"implied_vol_percentile_full\"), meeting its invalidation condition. Therefore the allocations should be adjusted back to the evidence\u2011based fractions.",
+        "evidence_cited": [
+          "strategies[0].allocation_frac (0.35)",
+          "strategies[1].allocation_frac (0.35)",
+          "strategies[0].short_strike_distance_sigma (-1.8)",
+          "strategies[1].short_strike_distance_sigma (1.8)",
+          "market.iv_rv.ratio (1.526)",
+          "strategies[2].invalidation condition (implied_vol_percentile_252d 86.0)"
+        ],
+        "modified_allocations": {
+          "bull_put_spread": 0.35,
+          "bear_call_spread": 0.35,
+          "long_strangle": 0.0
+        },
+        "model": "openai/gpt-oss-120b",
+        "usage": {
+          "queue_time": 0.367180456,
+          "prompt_tokens": 3086,
+          "prompt_time": 0.131893967,
+          "completion_tokens": 1357,
+          "completion_time": 2.830215969,
+          "total_tokens": 4443,
+          "total_time": 2.962109936,
+          "completion_tokens_details": {
+            "reasoning_tokens": 994
+          }
+        }
+      },
+      "effective_source": "challenger_modified",
+      "final_allocation": {
+        "bull_put_spread": 0.35,
+        "bear_call_spread": 0.35,
+        "long_strangle": 0.0
+      },
+      "gate_adjustments": []
+    }
+  ]
+}
