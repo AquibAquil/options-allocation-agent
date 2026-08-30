@@ -24,6 +24,7 @@ from dataclasses import asdict, dataclass, field
 from . import config, risk
 from .allocator import Allocator, AllocationProposal
 from .benchmark import AllocationDelta, CycleReturn, RejectionTracker
+from .shadow import ShadowBook
 from .challenger import Challenger, ChallengeResult, resolve_effective_allocation
 from .evidence import packet as pk
 from .gateway import BrokerError, BrokerGateway, verify_after_submit
@@ -88,7 +89,7 @@ class DecisionCycle:
         self.last_valid_allocation: dict[str, float] = {k: 0.0 for k in KEYS}
         self.delta = AllocationDelta()
         self.rejections = RejectionTracker()
-        self._last_pnl: dict[str, float] = {k: 0.0 for k in KEYS}
+        self.shadow = ShadowBook()
 
     # -- the cycle ----------------------------------------------------------
 
@@ -331,25 +332,25 @@ class DecisionCycle:
     def _record_metrics(self, packet: pk.EvidencePacket) -> dict:
         """Update the allocation delta and rejection rate for this cycle.
 
-        Per-strategy return r_i is the change in the position's P&L since the
-        last cycle, per unit of max loss. LIMITATION: for a strategy the actual
-        portfolio does not hold, r_i is taken as 0 rather than marked from a
-        fixed-selection shadow. That biases the delta toward the AI when it
-        declines to fund a strategy that equal weight would have funded -- the
-        exact "trivial positive delta" risk flagged in the design. Shadow
-        marking of unheld strategies is the documented next refinement.
+        Per-strategy return r_i comes from the shadow book: a fixed-selection
+        structure per strategy, held across cycles and Black-Scholes revalued, so
+        r_i exists for every strategy whether or not the real portfolio holds it.
+        Both the actual and equal-weight portfolios are evaluated on this common
+        r_i, so the delta isolates the weight decision (PRD 2.8) and no longer
+        favours the AI merely for declining to fund a losing strategy (PRD 3).
+        Weights are the real allocation shares.
         """
-        returns: dict[str, float] = {}
-        weights: dict[str, float] = {}
-        for se in packet.strategies:
-            weights[se.key] = se.allocation_frac
-            max_loss = se.max_loss_outstanding
-            pnl_now = se.unrealized_pnl or 0.0
-            if max_loss > 0:
-                returns[se.key] = (pnl_now - self._last_pnl.get(se.key, 0.0)) / max_loss
-            else:
-                returns[se.key] = 0.0
-            self._last_pnl[se.key] = pnl_now
+        annual_vol = (
+            packet.market.realized_vol.get("21d")
+            or packet.market.realized_vol.get("10d")
+            or packet.market.implied_vol
+        )
+        returns = self.shadow.mark(
+            spot=packet.market.spot,
+            annual_vol=annual_vol,
+            asof=dt.date.fromisoformat(packet.asof),
+        )
+        weights = {se.key: se.allocation_frac for se in packet.strategies}
 
         cycle_return = CycleReturn(cycle_id=packet.cycle_id, returns=returns, weights=weights)
         delta_entry = self.delta.record(cycle_return)
