@@ -1,0 +1,350 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-30T19:44:34.867308+00:00",
+  "strategies": [
+    {
+      "key": "bull_put_spread",
+      "name": "Bull put spread",
+      "direction": "bullish/neutral",
+      "vol_exposure": "short",
+      "exit_behaviour": "close_fully",
+      "dte_band": [
+        7,
+        14
+      ],
+      "thesis_short": "Sells downside insurance at a strike the underlying is unlikely to reach within the holding period, and earns the volatility risk premium plus time decay for bearing that risk."
+    },
+    {
+      "key": "bear_call_spread",
+      "name": "Bear call spread",
+      "direction": "bearish/neutral",
+      "vol_exposure": "short",
+      "exit_behaviour": "close_fully",
+      "dte_band": [
+        7,
+        14
+      ],
+      "thesis_short": "The mirror of the bull put spread."
+    },
+    {
+      "key": "long_strangle",
+      "name": "Long strangle",
+      "direction": "neutral",
+      "vol_exposure": "long",
+      "exit_behaviour": "scale_down_only",
+      "dte_band": [
+        25,
+        35
+      ],
+      "thesis_short": "Buys convexity."
+    }
+  ],
+  "state": "live",
+  "has_data": true,
+  "latest": {
+    "cycle_id": "2026-08-29T08:16-0400",
+    "asof": "2026-08-29",
+    "status": "dry_run",
+    "reason": "dry run: 1 order(s) planned, none placed",
+    "is_dry_run": true,
+    "market": {
+      "symbol": "QQQ",
+      "spot": 716.43,
+      "spot_asof": "2026-08-28",
+      "realized_vol_21d": 0.1783832424589149,
+      "implied_vol": 0.19920000000000002,
+      "implied_vol_source": "CBOE VXN",
+      "iv_percentile_252d": 13.88888888888889,
+      "iv_rv": {
+        "implied": 0.19920000000000002,
+        "realized": 0.1783832424589149,
+        "spread": 0.020816757541085112,
+        "ratio": 1.1166968222695
+      }
+    },
+    "portfolio": {
+      "equity": 100000.0,
+      "buying_power": 400000.0,
+      "risk_budget_total": 20000.0,
+      "risk_budget_utilisation": 0.0,
+      "max_loss_as_frac_of_equity": 0.0
+    },
+    "strategies": [
+      {
+        "key": "bull_put_spread",
+        "name": "Bull put spread",
+        "current_alloc": 0.0,
+        "proposed_alloc": 0.0,
+        "final_alloc": 0.0,
+        "change": 0.0,
+        "contracts": 0,
+        "pnl_frac_of_max_loss": null,
+        "unrealized_pnl": null,
+        "short_strike_distance_sigma": null,
+        "reasoning": "IV is low (13.9 percentile) providing little premium and we lack evidence the short strike is safely distant, so the thesis lacks support."
+      },
+      {
+        "key": "bear_call_spread",
+        "name": "Bear call spread",
+        "current_alloc": 0.0,
+        "proposed_alloc": 0.0,
+        "final_alloc": 0.0,
+        "change": 0.0,
+        "contracts": 0,
+        "pnl_frac_of_max_loss": null,
+        "unrealized_pnl": null,
+        "short_strike_distance_sigma": null,
+        "reasoning": "Similarly low IV and no indication of a far\u2011out short strike make the short\u2011vol bearish thesis unsupported."
+      },
+      {
+        "key": "long_strangle",
+        "name": "Long strangle",
+        "current_alloc": 0.0,
+        "proposed_alloc": 0.45,
+        "final_alloc": 0.45,
+        "change": 0.45,
+        "contracts": 0,
+        "pnl_frac_of_max_loss": null,
+        "unrealized_pnl": null,
+        "short_strike_distance_sigma": null,
+        "reasoning": "Implied volatility is at a low percentile (13.9%) making protection cheap and the IV/RV spread (0.0208) indicates room for expansion, satisfying its thesis and not triggering invalidation."
+      }
+    ],
+    "decision": {
+      "proposed": {
+        "bull_put_spread": 0.0,
+        "bear_call_spread": 0.0,
+        "long_strangle": 0.45
+      },
+      "reasoning": {
+        "bull_put_spread": "IV is low (13.9 percentile) providing little premium and we lack evidence the short strike is safely distant, so the thesis lacks support.",
+        "bear_call_spread": "Similarly low IV and no indication of a far\u2011out short strike make the short\u2011vol bearish thesis unsupported.",
+        "long_strangle": "Implied volatility is at a low percentile (13.9%) making protection cheap and the IV/RV spread (0.0208) indicates room for expansion, satisfying its thesis and not triggering invalidation."
+      },
+      "portfolio_rationale": "The long strangle offers long volatility exposure with low correlation to the short\u2011vol spreads and meets its cheap\u2011protection condition; allocating the maximum 45% per\u2011strategy keeps concentration within limits while leaving ample risk budget unused, avoiding the weak short\u2011vol opportunities.",
+      "model": "openai/gpt-oss-120b"
+    },
+    "challenge": {
+      "verdict": "APPROVE",
+      "critique": "The allocations align with the evidence: low implied\u2011vol percentile (13.9%) makes short\u2011vol spreads unattractive and long\u2011vol cheap, while IV still exceeds realized vol (ratio 1.116, spread 0.0208) supporting a long strangle. No invalidation conditions are met for any strategy, and the allocation respects all constraints.",
+      "evidence_cited": [
+        "implied_vol_percentile_252d = 13.88888888888889 (low IV percentile)",
+        "iv_rv.ratio = 1.1166968222695 (IV > RV, but low percentile reduces premium for short\u2011vol)",
+        "iv_rv.spread = 0.020816757541085112 (room for expansion)"
+      ],
+      "modified_allocations": {
+        "bull_put_spread": 0.0,
+        "bear_call_spread": 0.0,
+        "long_strangle": 0.45
+      }
+    },
+    "final_allocation": {
+      "bull_put_spread": 0.0,
+      "bear_call_spread": 0.0,
+      "long_strangle": 0.45
+    },
+    "effective_source": "allocator_proposal",
+    "gate_adjustments": [],
+    "orders": [
+      {
+        "strategy": "long_strangle",
+        "submitted": false,
+        "dry_run": true,
+        "summary": "Long strangle  (open, 12x)\n  buy  1x QQQ260930C00750000 @ ~2.90  [buy_to_open]\n  buy  1x QQQ260930P00679000 @ ~4.47  [buy_to_open]\n  net debit: 7.38/share",
+        "fill": null,
+        "error": null
+      }
+    ],
+    "metrics": {
+      "this_cycle": {
+        "cycle_id": "2026-08-29T08:16-0400",
+        "actual_return": 0.0,
+        "equal_weight_return": 0.0,
+        "actual_equity": 1.0,
+        "equal_weight_equity": 1.0,
+        "cumulative_delta": 0.0
+      },
+      "allocation_delta": {
+        "actual_total_return": 0.0,
+        "equal_weight_total_return": 0.0,
+        "allocation_delta": 0.0,
+        "cycles": 1,
+        "beats_equal_weight": false
+      },
+      "rejection": {
+        "total_reviews": 1,
+        "approve": 1,
+        "modify": 0,
+        "reject": 0,
+        "rejection_rate": 0.0,
+        "approval_rate": 1.0
+      }
+    }
+  },
+  "series": [
+    {
+      "cycle_id": "dryrun-live",
+      "actual_equity": 1.0,
+      "equal_weight_equity": 1.0,
+      "cumulative_delta": 0.0
+    },
+    {
+      "cycle_id": "dryrun-live-2",
+      "actual_equity": 1.0,
+      "equal_weight_equity": 1.0,
+      "cumulative_delta": 0.0
+    },
+    {
+      "cycle_id": "2026-08-29T08:16-0400",
+      "actual_equity": 1.0,
+      "equal_weight_equity": 1.0,
+      "cumulative_delta": 0.0
+    }
+  ],
+  "cycles": [
+    {
+      "cycle_id": "dryrun-live",
+      "asof": "2026-08-31",
+      "status": "dry_run",
+      "verdict": "APPROVE"
+    },
+    {
+      "cycle_id": "dryrun-live-2",
+      "asof": "2026-08-31",
+      "status": "dry_run",
+      "verdict": "MODIFY"
+    },
+    {
+      "cycle_id": "2026-08-29T08:16-0400",
+      "asof": "2026-08-29",
+      "status": "dry_run",
+      "verdict": "APPROVE"
+    }
+  ],
+  "metrics": {
+    "this_cycle": {
+      "cycle_id": "2026-08-29T08:16-0400",
+      "actual_return": 0.0,
+      "equal_weight_return": 0.0,
+      "actual_equity": 1.0,
+      "equal_weight_equity": 1.0,
+      "cumulative_delta": 0.0
+    },
+    "allocation_delta": {
+      "actual_total_return": 0.0,
+      "equal_weight_total_return": 0.0,
+      "allocation_delta": 0.0,
+      "cycles": 1,
+      "beats_equal_weight": false
+    },
+    "rejection": {
+      "total_reviews": 1,
+      "approve": 1,
+      "modify": 0,
+      "reject": 0,
+      "rejection_rate": 0.0,
+      "approval_rate": 1.0
+    }
+  },
+  "correlation": {
+    "keys": [
+      "bull_put_spread",
+      "bear_call_spread",
+      "long_strangle"
+    ],
+    "matrix": [
+      [
+        1.0,
+        -0.8766828363792073,
+        -0.45199369575170956
+      ],
+      [
+        -0.8766828363792072,
+        1.0,
+        0.013192419674859786
+      ],
+      [
+        -0.4519936957517096,
+        0.013192419674859786,
+        1.0
+      ]
+    ]
+  },
+  "shock_simulations": {
+    "simulated": true,
+    "scenarios": [
+      {
+        "name": "baseline_quiet",
+        "regime": "Quiet, low IV (the live window)",
+        "expectation": "Fund both spreads to harvest the IV>RV premium; keep the strangle funded despite its small loss because protection is cheap (IV 20th pct) -- do NOT cut it for bleeding.",
+        "final_allocation": {
+          "bull_put_spread": 0.35,
+          "bear_call_spread": 0.35,
+          "long_strangle": 0.3
+        },
+        "verdict": "APPROVE",
+        "error": null
+      },
+      {
+        "name": "volatility_shock",
+        "regime": "Volatility expansion",
+        "expectation": "Cut both short-vol spreads hard -- their short strikes are threatened and RV now exceeds IV, so the premium no longer pays for the risk. The strangle is the winner, but IV at the 92nd pct means adding fresh convexity is expensive; holding the existing position is reasonable, chasing it less so.",
+        "final_allocation": {
+          "bull_put_spread": 0.3,
+          "bear_call_spread": 0.25,
+          "long_strangle": 0.0
+        },
+        "verdict": "MODIFY",
+        "error": null
+      },
+      {
+        "name": "directional_selloff_breach",
+        "regime": "Sharp selloff, bull put breached",
+        "expectation": "Cut the bull put decisively -- its short strike is breached, which is genuine invalidation, not noise. This is the case a defined-risk spread caps but does not welcome. The bear call is safe; the strangle earned its keep.",
+        "final_allocation": {
+          "bull_put_spread": 0.0,
+          "bear_call_spread": 0.0,
+          "long_strangle": 0.0
+        },
+        "verdict": "MODIFY",
+        "error": null
+      },
+      {
+        "name": "melt_up_breach",
+        "regime": "Sharp rally, bear call breached",
+        "expectation": "Cut the bear call -- its short strike is breached. The bull put is safe and profitable; the strangle profited from the move.",
+        "final_allocation": {
+          "bull_put_spread": 0.3,
+          "bear_call_spread": 0.0,
+          "long_strangle": 0.2
+        },
+        "verdict": "APPROVE",
+        "error": null
+      },
+      {
+        "name": "strangle_bleeds_protection_cheap",
+        "regime": "Strangle bleeding, IV still cheap",
+        "expectation": "HOLD the strangle. Cutting it here is the exact error the system exists to avoid: selling convexity for a loss right before it might pay, on the basis of P&L alone. Its not_invalidation says bleeding is what it does while it waits, and protection is still cheap.",
+        "final_allocation": {
+          "bull_put_spread": 0.4,
+          "bear_call_spread": 0.4,
+          "long_strangle": 0.2
+        },
+        "verdict": "MODIFY",
+        "error": null
+      },
+      {
+        "name": "strangle_protection_expensive",
+        "regime": "Strangle in profit, but IV now expensive",
+        "expectation": "Reduce the strangle -- this is its GENUINE invalidation (protection no longer cheap), which is different from cutting it for a loss. The contrast with the bleeding-but-cheap case is the whole point: P&L is not the trigger, the IV percentile is.",
+        "final_allocation": {
+          "bull_put_spread": 0.35,
+          "bear_call_spread": 0.35,
+          "long_strangle": 0.0
+        },
+        "verdict": "MODIFY",
+        "error": null
+      }
+    ]
+  }
+}
