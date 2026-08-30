@@ -1,0 +1,30 @@
+# Unattended agent on a small Linux VPS.
+#
+#   cd deploy && docker compose up -d --build      # start (detached)
+#   docker compose logs -f                          # watch cycles
+#   docker compose down                             # graceful stop (SIGTERM)
+#
+# Secrets come from a .env file NEXT TO THIS FILE (deploy/.env), never baked into
+# the image. Copy the repo-root .env there, or create one with the same keys.
+
+services:
+  agent:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: alloc-agent:latest
+    # Credentials + provider config. Same keys as the app's .env.
+    env_file:
+      - .env
+    # Persist the audit log, correlation matrix, and shock artifacts on the host,
+    # so a restart resumes with its history and does not recompute correlation.
+    volumes:
+      - ../logs:/app/logs
+      - ../artifacts:/app/artifacts
+    # Survive a VPS reboot; the runner resumes on the next scheduled slot.
+    restart: unless-stopped
+    # docker stop sends SIGTERM; the runner stops gracefully between cycles.
+    stop_grace_period: 90s
+    # Run the window and stop at Friday's close. Change to ["--dry-run"] to
+    # rehearse the full pipeline without placing orders.
+    command: ["--stop-at", "2026-09-04T16:00"]

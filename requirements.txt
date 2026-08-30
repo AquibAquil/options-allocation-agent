@@ -1,6 +1,14 @@
+# Runtime + test dependencies.
 httpx>=0.28
 numpy>=2.0
 scipy>=1.14
-pytest>=8.0
+tzdata                     # IANA tz database (Windows has none; slim Docker images often lack it)
+
+# Broker interface: the official Alpaca MCP server, driven via the mcp client.
+alpaca-mcp-server>=2.3.0   # pulls in `mcp`
+
+# LLM: Groq is used via httpx (no SDK). anthropic is the optional fallback provider.
 anthropic>=0.40
-tzdata; platform_system == "Windows"
+
+# Tests only.
+pytest>=8.0

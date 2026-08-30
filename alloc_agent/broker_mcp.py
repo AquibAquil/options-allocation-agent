@@ -30,7 +30,12 @@ from .execution import OrderSpec, parse_occ_symbol
 from .gateway import BrokerError
 from .strategies import BY_KEY, KEYS, max_loss_per_contract
 
-DEFAULT_EXE = os.path.join(config.REPO_ROOT, ".venv", "Scripts", "alpaca-mcp-server.exe")
+# The Alpaca MCP server executable. On the Windows dev box it lives in the venv;
+# on a Linux VPS / in Docker it is the `alpaca-mcp-server` console script on PATH.
+# ALPACA_MCP_EXE overrides both.
+DEFAULT_EXE = os.environ.get("ALPACA_MCP_EXE") or os.path.join(
+    config.REPO_ROOT, ".venv", "Scripts", "alpaca-mcp-server.exe"
+)
 DEFAULT_ENV_FILE = os.path.join(config.REPO_ROOT, ".env")
 
 
@@ -258,12 +263,14 @@ class _Bridge:
 
         self._stop = asyncio.Event()
         env = dict(os.environ)
-        env["ALPACA_PAPER_TRADE"] = "true"
-        params = StdioServerParameters(
-            command=self._exe,
-            args=["--transport", "stdio", "--env-file", self._env_file],
-            env=env,
-        )
+        env.setdefault("ALPACA_PAPER_TRADE", "true")
+        # Pass --env-file only when it exists. In Docker/VPS the credentials come
+        # through the environment (env vars the server also reads), and there is
+        # no .env file to point at.
+        args = ["--transport", "stdio"]
+        if self._env_file and os.path.exists(self._env_file):
+            args += ["--env-file", self._env_file]
+        params = StdioServerParameters(command=self._exe, args=args, env=env)
         async with stdio_client(params) as (read, write):
             async with ClientSession(read, write) as session:
                 await session.initialize()

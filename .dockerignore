@@ -1,0 +1,13 @@
+# Keep the image small and secret-free.
+.git
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+tests
+logs
+artifacts
+.env
+.env.*
+*.md
+!requirements.txt
