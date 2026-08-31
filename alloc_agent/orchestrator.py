@@ -91,6 +91,38 @@ class DecisionCycle:
         self.rejections = RejectionTracker()
         self.shadow = ShadowBook()
 
+    # -- cross-run state (for stateless schedulers like GitHub Actions) -----
+
+    def state_dict(self) -> dict:
+        """Serialise the cross-cycle state a long-lived process would hold.
+
+        A scheduler that runs one cycle per invocation (GitHub Actions) starts a
+        fresh process each time; without this, the allocation delta, shadow book,
+        and rejection counts would reset every cycle. Positions are always read
+        live from the broker, so they are NOT part of this -- only the cumulative
+        analytics and the last-valid anchor.
+        """
+        return {
+            "last_valid_allocation": self.last_valid_allocation,
+            "delta": self.delta.to_dict(),
+            "rejections": self.rejections.to_dict(),
+            "shadow": self.shadow.to_dict(),
+        }
+
+    def apply_state(self, state: dict | None) -> None:
+        if not state:
+            return
+        if "last_valid_allocation" in state:
+            self.last_valid_allocation = {
+                k: float(state["last_valid_allocation"].get(k, 0.0)) for k in KEYS
+            }
+        if "delta" in state:
+            self.delta = AllocationDelta.from_dict(state["delta"])
+        if "rejections" in state:
+            self.rejections = RejectionTracker.from_dict(state["rejections"])
+        if "shadow" in state:
+            self.shadow = ShadowBook.from_dict(state["shadow"])
+
     # -- the cycle ----------------------------------------------------------
 
     def run_cycle(

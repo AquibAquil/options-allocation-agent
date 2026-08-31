@@ -1,0 +1,88 @@
+name: trading-cycle
+
+# Scheduled deployment (PRD 2.5) with no server and no card: GitHub Actions
+# fires one decision cycle at each trading slot. The agent acts only at 10:00 and
+# 14:00 ET, so a cron trigger fits perfectly -- nothing runs between cycles.
+#
+# Cron is UTC. During the hackathon window (late Aug-Sep, EDT = UTC-4):
+#   14:00 UTC = 10:00 ET   |   18:00 UTC = 14:00 ET
+on:
+  schedule:
+    - cron: "0 14,18 * * 1-5"   # 10:00 and 14:00 ET, weekdays
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (run the full pipeline but place NO orders)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write            # to commit the log + state back
+
+concurrency:
+  group: trading-cycle       # never overlap two cycles
+  cancel-in-progress: false
+
+jobs:
+  cycle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Aug 31 is covered by the laptop run; Actions goes live from Sep 1. A
+      # manual dispatch is allowed any time (and defaults to dry-run).
+      - name: Cutover guard
+        id: guard
+        run: |
+          today=$(date -u +%Y-%m-%d)
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$today" \< "2026-09-01" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Before the Sep 1 cutover; the laptop run covers today."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Python
+        if: steps.guard.outputs.skip != 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install
+        if: steps.guard.outputs.skip != 'true'
+        run: pip install -r requirements.txt
+
+      - name: Run one cycle
+        if: steps.guard.outputs.skip != 'true'
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MODEL_PROVIDER: groq
+          ALPACA_PAPER_TRADE: "true"
+          ALPACA_MCP_EXE: alpaca-mcp-server
+          DRY: ${{ github.event.inputs.dry_run }}
+        run: |
+          mkdir -p artifacts logs
+          [ -f artifacts/correlation.json ] || python scripts/precompute_correlation.py
+          flags="--once --state artifacts/agent_state.json"
+          if [ "$DRY" = "true" ]; then flags="$flags --dry-run"; fi
+          echo "running: python -m alloc_agent.runner $flags"
+          python -m alloc_agent.runner $flags
+          python scripts/export_demo_feed.py || true
+
+      - name: Commit results
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          git config user.name "alloc-agent-bot"
+          git config user.email "actions@users.noreply.github.com"
+          # These are gitignored for local dev; force-add so the run persists.
+          git add -f logs/cycles.jsonl artifacts/agent_state.json \
+                     artifacts/demo_feed.json artifacts/correlation.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "cycle $(date -u +%FT%TZ)"
+            git pull --rebase --autostash origin main || true
+            git push
+          fi

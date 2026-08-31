@@ -169,3 +169,14 @@ class RejectionTracker:
             "rejection_rate": self.rejection_rate,
             "approval_rate": self.approval_rate,
         }
+
+    def to_dict(self) -> dict:
+        return {"approve": self.approve, "modify": self.modify, "reject": self.reject}
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "RejectionTracker":
+        return cls(
+            approve=data.get("approve", 0),
+            modify=data.get("modify", 0),
+            reject=data.get("reject", 0),
+        )

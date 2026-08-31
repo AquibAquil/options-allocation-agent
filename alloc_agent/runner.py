@@ -51,6 +51,7 @@ class Runner:
         calendar_lookahead_days: int = 14,
         now_fn: Callable[[], dt.datetime] | None = None,
         sleep_fn: Callable[[float], None] | None = None,
+        state_path: str | None = None,
     ):
         self.cycle = cycle
         self.gateway_factory = gateway_factory
@@ -61,6 +62,9 @@ class Runner:
         self._now = now_fn or (lambda: dt.datetime.now(ET))
         self._sleep = sleep_fn or time.sleep
         self._stop = threading.Event()
+        # When set, cumulative state is loaded before and saved after each cycle,
+        # so a stateless per-invocation scheduler keeps continuity across runs.
+        self.state_path = state_path
 
     # -- control ------------------------------------------------------------
 
@@ -90,14 +94,49 @@ class Runner:
         cycle_id: str | None = None,
         target: dt.datetime | None = None,
     ) -> CycleResult:
-        """Open a fresh broker session, run one cycle, close it."""
+        """Open a fresh broker session, run one cycle, close it.
+
+        If a state path is configured, the cumulative cross-cycle state is loaded
+        before the cycle and saved after -- continuity for a stateless scheduler.
+        """
         target = target or self._now()
         asof = asof or target.date()
         cycle_id = cycle_id or self.cycle_id(target)
-        with self.gateway_factory(asof) as gateway:
-            return self.cycle.run_cycle(
-                gateway, cycle_id=cycle_id, asof=asof, dry_run=self.dry_run
-            )
+        self._load_state()
+        try:
+            with self.gateway_factory(asof) as gateway:
+                return self.cycle.run_cycle(
+                    gateway, cycle_id=cycle_id, asof=asof, dry_run=self.dry_run
+                )
+        finally:
+            self._save_state()
+
+    def _load_state(self) -> None:
+        import json
+        import os
+
+        if not self.state_path or not hasattr(self.cycle, "apply_state"):
+            return
+        if not os.path.exists(self.state_path):
+            return
+        try:
+            with open(self.state_path, encoding="utf-8") as fh:
+                self.cycle.apply_state(json.load(fh))
+        except (json.JSONDecodeError, OSError, KeyError) as exc:
+            log.warning("could not load state from %s (%s); starting fresh",
+                        self.state_path, exc)
+
+    def _save_state(self) -> None:
+        import json
+        import os
+
+        if not self.state_path or not hasattr(self.cycle, "state_dict"):
+            return
+        os.makedirs(os.path.dirname(self.state_path) or ".", exist_ok=True)
+        tmp = self.state_path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(self.cycle.state_dict(), fh, indent=2, default=str)
+        os.replace(tmp, self.state_path)
 
     def _trading_dates(self, now: dt.datetime) -> list[str]:
         start = now.date()
@@ -201,7 +240,7 @@ def load_correlation(path: str | None = None) -> dict:
     return {"keys": art["keys"], "matrix": art["matrix"]}
 
 
-def build_runner(*, dry_run: bool = False) -> Runner:
+def build_runner(*, dry_run: bool = False, state_path: str | None = None) -> Runner:
     """Wire the production runner: real models, real MCP gateway."""
     from .allocator import Allocator
     from .broker_mcp import McpBrokerGateway
@@ -218,7 +257,7 @@ def build_runner(*, dry_run: bool = False) -> Runner:
     def factory(asof: dt.date):
         return McpBrokerGateway(asof=asof)
 
-    return Runner(cycle, factory, dry_run=dry_run)
+    return Runner(cycle, factory, dry_run=dry_run, state_path=state_path)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -231,6 +270,9 @@ def main(argv: list[str] | None = None) -> int:
                         help="run a single cycle immediately and exit")
     parser.add_argument("--stop-at", type=str, default=None,
                         help="ISO datetime (ET) to end the run, e.g. 2026-09-04T16:00")
+    parser.add_argument("--state", type=str, default=None,
+                        help="JSON file to persist cumulative state across runs "
+                             "(for --once under a scheduler like GitHub Actions)")
     args = parser.parse_args(argv)
 
     logging.basicConfig(
@@ -238,7 +280,7 @@ def main(argv: list[str] | None = None) -> int:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
 
-    runner = build_runner(dry_run=args.dry_run)
+    runner = build_runner(dry_run=args.dry_run, state_path=args.state)
 
     if args.once:
         result = runner.run_one()

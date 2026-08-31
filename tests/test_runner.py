@@ -68,6 +68,12 @@ class RecordingCycle:
             raise RuntimeError("boom")
         return CycleResult(cycle_id=cycle_id, asof=asof.isoformat(), status=DRY_RUN)
 
+    def state_dict(self):
+        return {"calls": len(self.calls)}
+
+    def apply_state(self, state):
+        pass
+
 
 def make_runner(clock, cycle, *, dates=WINDOW, fail_calendar=False, dry_run=True, poll=600.0):
     factory = lambda asof: FakeGateway(dates, fail_calendar=fail_calendar)
@@ -185,3 +191,44 @@ def test_load_correlation_reads_the_artifact(tmp_path):
     p.write_text(json.dumps(art))
     loaded = rn.load_correlation(str(p))
     assert loaded == {"keys": ["a", "b", "c"], "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]]}
+
+
+# --- cross-run state persistence (GitHub Actions) --------------------------
+
+
+def test_state_round_trips_through_a_file(tmp_path):
+    """run_one with a state_path saves cumulative state and reloads it next run."""
+    import json
+    from alloc_agent.orchestrator import DecisionCycle
+    from alloc_agent.benchmark import CycleReturn
+    from alloc_agent.strategies import KEYS
+
+    corr = {"keys": list(KEYS), "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]]}
+
+    # First "process": accumulate some state and save it.
+    cyc1 = DecisionCycle(None, None, correlation=corr, log_dir=str(tmp_path))
+    cyc1.rejections.record("MODIFY")
+    cyc1.delta.record(CycleReturn("c1", {k: 0.01 for k in KEYS}, {k: 0.3 for k in KEYS}))
+    cyc1.shadow.mark(spot=580.0, annual_vol=0.18, asof=dt.date(2026, 8, 31))
+    state_file = tmp_path / "state.json"
+    state_file.write_text(json.dumps(cyc1.state_dict(), default=str))
+
+    # Second "process": a fresh cycle loads the saved state.
+    cyc2 = DecisionCycle(None, None, correlation=corr, log_dir=str(tmp_path))
+    cyc2.apply_state(json.loads(state_file.read_text()))
+
+    assert cyc2.rejections.modify == 1
+    assert len(cyc2.delta.history) == 1
+    assert set(cyc2.shadow.positions) == set(KEYS)   # shadow positions restored
+
+
+def test_runner_persists_state_across_run_one_calls(tmp_path):
+    clock = FakeClock(et(2026, 8, 31, 10, 0))
+    cycle = RecordingCycle()
+    state = tmp_path / "state.json"
+    runner = rn.Runner(
+        cycle, lambda asof: FakeGateway(WINDOW), dry_run=True,
+        now_fn=clock.now, sleep_fn=clock.sleep, state_path=str(state),
+    )
+    runner.run_one(target=et(2026, 8, 31, 10, 0))
+    assert state.exists()          # state written after the cycle

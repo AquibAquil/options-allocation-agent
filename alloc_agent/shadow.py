@@ -108,6 +108,37 @@ class ShadowBook:
     def __init__(self) -> None:
         self.positions: dict[str, ShadowPosition] = {}
 
+    def to_dict(self) -> dict:
+        return {
+            key: {
+                "strategy_key": p.strategy_key,
+                "opened_asof": p.opened_asof.isoformat(),
+                "dte_at_open": p.dte_at_open,
+                "strikes": list(p.strikes),
+                "right": p.right,
+                "entry": p.entry,
+                "max_loss": p.max_loss,
+                "last_pnl": p.last_pnl,
+            }
+            for key, p in self.positions.items()
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict | None) -> "ShadowBook":
+        book = cls()
+        for key, v in (data or {}).items():
+            book.positions[key] = ShadowPosition(
+                strategy_key=v["strategy_key"],
+                opened_asof=dt.date.fromisoformat(v["opened_asof"]),
+                dte_at_open=v["dte_at_open"],
+                strikes=tuple(v["strikes"]),
+                right=v.get("right"),
+                entry=v["entry"],
+                max_loss=v["max_loss"],
+                last_pnl=v.get("last_pnl", 0.0),
+            )
+        return book
+
     def mark(self, *, spot: float, annual_vol: float, asof: dt.date) -> dict[str, float]:
         """Return each strategy's per-unit-max-loss return since the last mark.
 
