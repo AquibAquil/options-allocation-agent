@@ -278,10 +278,13 @@ class DecisionCycle:
             if plan.is_blocked or plan.contract_delta == 0:
                 continue
 
-            # Build the order. A dry run stops here, recording the intended
-            # trade without placing it.
+            # Build the order, priced to fill (marketable). A near-mid limit on a
+            # CREDIT spread rests until a buyer meets it; marketable pricing
+            # crosses the spread so the position actually deploys.
             try:
-                spec = build_order(plan, selection.legs, intent=plan.action)
+                spec = build_order(
+                    plan, selection.legs, intent=plan.action, marketable=True
+                )
             except ValueError as exc:
                 orders.append(
                     {"strategy": key, "submitted": False, "error": f"{type(exc).__name__}: {exc}"}

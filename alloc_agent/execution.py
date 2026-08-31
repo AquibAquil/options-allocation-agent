@@ -165,6 +165,8 @@ class ContractLeg:
     strike: float
     expiry: str
     mid: float             # per-share mid, from the live snapshot
+    bid: float | None = None   # for marketable pricing
+    ask: float | None = None
 
 
 def _client_order_id(strategy_key: str, intent: str, qty: int, legs: tuple[ContractLeg, ...]) -> str:
@@ -189,12 +191,19 @@ def build_order(
     *,
     intent: str | None = None,
     slippage: float = 0.02,
+    marketable: bool = False,
 ) -> OrderSpec:
     """Build a validated multi-leg order spec from a sizing plan and chosen legs.
 
     `slippage` (per share, non-negative) makes the net price marginally
     marketable in the correct direction: accept slightly less credit, or pay
     slightly more debit. It never flips the sign of the net.
+
+    `marketable` prices each leg on the side that fills against resting liquidity
+    -- buy at the ask, sell at the bid -- instead of at mid. A debit structure
+    (long strangle) fills at mid regardless because you are buying; a CREDIT
+    spread priced at mid rests until a buyer meets it, so it must be priced
+    marketably or it never fills. Falls back to mid for any leg missing a quote.
     """
     strategy = BY_KEY[plan.strategy_key]
     if slippage < 0:
@@ -238,6 +247,12 @@ def build_order(
         side = c.action
         if closing:
             side = "sell" if c.action == "buy" else "buy"
+
+        # Price this leg. Marketable crosses the spread on the side that fills.
+        price = c.mid
+        if marketable and c.bid is not None and c.ask is not None and c.bid > 0 and c.ask > 0:
+            price = c.ask if side == "buy" else c.bid
+
         legs.append(
             OrderLeg(
                 occ_symbol=c.occ_symbol,
@@ -247,7 +262,7 @@ def build_order(
                 reference_mid=c.mid,
             )
         )
-        net_cost += c.mid if side == "buy" else -c.mid
+        net_cost += price if side == "buy" else -price
 
     limit_price = round(net_cost + slippage, 2)
     # Guard the sign: a credit structure must not round into a debit limit.

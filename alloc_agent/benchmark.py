@@ -102,6 +102,22 @@ class AllocationDelta:
             "beats_equal_weight": self.cumulative_delta > 0,
         }
 
+    def to_dict(self) -> dict:
+        return {
+            "actual_equity": self.actual_equity,
+            "equal_equity": self.equal_equity,
+            "history": self.history,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "AllocationDelta":
+        obj = cls(
+            actual_equity=data.get("actual_equity", 1.0),
+            equal_equity=data.get("equal_equity", 1.0),
+        )
+        obj.history = list(data.get("history", []))
+        return obj
+
 
 @dataclass
 class RejectionTracker:

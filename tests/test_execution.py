@@ -303,3 +303,36 @@ def test_leg_falls_back_to_last_trade_when_quote_is_empty():
     snap = {"latestQuote": {}, "latestTrade": {"p": 3.40}}
     leg = ex.chain_leg_from_quote(snap, SHORT_PUT, "sell")
     assert leg.mid == pytest.approx(3.40)
+
+
+# --- marketable pricing (fills credit spreads) -----------------------------
+
+
+def test_marketable_credit_spread_crosses_to_fill():
+    """A credit spread priced at mid rests; marketable prices it to fill.
+
+    Short 702 put bid 3.52/ask 3.58 (mid 3.55), long 699 put bid 2.98/ask 3.07
+    (mid 3.03). Mid credit = 0.52. Marketable = sell short at BID (3.52), buy
+    long at ASK (3.07) => credit 0.45 -- less credit, but it fills.
+    """
+    legs = (
+        ex.ContractLeg(SHORT_PUT, "put", "sell", 702.0, "2026-09-11", mid=3.55, bid=3.52, ask=3.58),
+        ex.ContractLeg(LONG_PUT, "put", "buy", 699.0, "2026-09-11", mid=3.03, bid=2.98, ask=3.07),
+    )
+    mid_spec = ex.build_order(_mk_plan(BULL, 1, "open", 0.40), legs, slippage=0.0)
+    mkt_spec = ex.build_order(_mk_plan(BULL, 1, "open", 0.40), legs, slippage=0.0, marketable=True)
+    # Marketable collects LESS credit (less negative) but is fillable.
+    assert mkt_spec.limit_price == pytest.approx(-(3.52 - 3.07))   # -0.45
+    assert mid_spec.limit_price == pytest.approx(-(3.55 - 3.03))   # -0.52
+    assert mkt_spec.limit_price > mid_spec.limit_price             # gave up some credit
+    assert mkt_spec.is_credit                                      # still a credit, not a debit
+
+
+def test_marketable_falls_back_to_mid_without_quotes():
+    """Legs with no bid/ask can't be priced marketably; fall back to mid."""
+    legs = (
+        ex.ContractLeg(SHORT_PUT, "put", "sell", 702.0, "2026-09-11", mid=3.55),
+        ex.ContractLeg(LONG_PUT, "put", "buy", 699.0, "2026-09-11", mid=3.03),
+    )
+    spec = ex.build_order(_mk_plan(BULL, 1, "open", 0.40), legs, slippage=0.0, marketable=True)
+    assert spec.limit_price == pytest.approx(-0.52)   # mid, unchanged

@@ -139,7 +139,9 @@ class Selection:
 
 
 def _leg(c: Candidate, action: str) -> ContractLeg:
-    return ContractLeg(c.occ_symbol, c.right, action, c.strike, c.expiry, c.mid)
+    return ContractLeg(
+        c.occ_symbol, c.right, action, c.strike, c.expiry, c.mid, bid=c.bid, ask=c.ask
+    )
 
 
 def select_vertical(
