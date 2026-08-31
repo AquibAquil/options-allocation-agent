@@ -1,0 +1,95 @@
+{
+  "underlying": "QQQ",
+  "lookback_days": 252,
+  "sample_start": "2025-08-28",
+  "sample_end": "2026-08-28",
+  "construction": "revaluation",
+  "keys": [
+    "bull_put_spread",
+    "bear_call_spread",
+    "long_strangle"
+  ],
+  "matrix": [
+    [
+      1.0,
+      -0.8748250128239174,
+      -0.4534622566413871
+    ],
+    [
+      -0.8748250128239174,
+      1.0,
+      0.013049005307116937
+    ],
+    [
+      -0.4534622566413871,
+      0.013049005307116937,
+      0.9999999999999998
+    ]
+  ],
+  "matrix_piecewise": [
+    [
+      1.0,
+      -0.0169299278386561,
+      -0.42469799899931404
+    ],
+    [
+      -0.0169299278386561,
+      0.9999999999999998,
+      -0.4471117193144111
+    ],
+    [
+      -0.42469799899931404,
+      -0.4471117193144111,
+      1.0
+    ]
+  ],
+  "revaluation_meta": {
+    "n_days": 230,
+    "burn_in": 20,
+    "strike_spacing": 1.0,
+    "spread_width_strikes": 3,
+    "ewma_lambda": 0.94,
+    "sigma_mean": 0.19201843920699113,
+    "sigma_min": 0.08732689553047261,
+    "sigma_max": 0.2998658778947585,
+    "mean_daily_pnl_frac": {
+      "bull_put_spread": 0.009150954726209887,
+      "bear_call_spread": -0.008617564037664314,
+      "long_strangle": 0.027590196562976805
+    },
+    "std_daily_pnl_frac": {
+      "bull_put_spread": 0.1432578593193114,
+      "bear_call_spread": 0.12199752990438903,
+      "long_strangle": 0.33080427548285163
+    }
+  },
+  "piecewise_inputs": {
+    "n_days": 251,
+    "sigma_annual": 0.1963549396507655,
+    "sigma_daily": 0.012369198547976698,
+    "breach_threshold_down": -0.02561757346049601,
+    "breach_threshold_up": 0.027147544187688697,
+    "spread_dte": 10,
+    "strangle_decay": 0.009869192550935829,
+    "bull_put_credit": 0.0004758719826806846,
+    "bear_call_credit": 0.0007860150686897768,
+    "n_breach_down": 3,
+    "n_breach_up": 6
+  },
+  "shape_check": {
+    "bull_put_vs_bear_call": -0.8748250128239174,
+    "bull_put_vs_strangle": -0.4534622566413871,
+    "bear_call_vs_strangle": 0.013049005307116937,
+    "passed": true,
+    "failures": []
+  },
+  "shape_check_piecewise": {
+    "bull_put_vs_bear_call": -0.0169299278386561,
+    "bull_put_vs_strangle": -0.42469799899931404,
+    "bear_call_vs_strangle": -0.4471117193144111,
+    "passed": false,
+    "failures": [
+      "spreads not strongly negatively correlated (-0.017 >= -0.30)"
+    ]
+  }
+}
