@@ -181,7 +181,10 @@ function renderSpark(series){
 
 async function load(){
   let f=null;
-  for(const url of ["./demo_feed.json","../artifacts/demo_feed.json"]){
+  // Live data source: the Actions bot rewrites artifacts/demo_feed.json every
+  // cycle, so the raw GitHub copy is always current. Local paths win first for
+  // offline dev; the raw URL keeps the hosted (Vercel) dashboard live.
+  for(const url of ["./demo_feed.json","../artifacts/demo_feed.json","https://raw.githubusercontent.com/AquibAquil/options-allocation-agent/main/artifacts/demo_feed.json"]){
     try{const r=await fetch(url,{cache:"no-store"}); if(r.ok){f=await r.json(); break;}}catch(e){}
   }
   if(!f||!f.latest) return;  // keep mockup fallback values
