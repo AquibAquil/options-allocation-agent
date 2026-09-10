@@ -1,12 +1,12 @@
 {
   "last_valid_allocation": {
-    "bull_put_spread": 0.2988961031721855,
-    "bear_call_spread": 0.19720514065140668,
+    "bull_put_spread": 0.297007855438612,
+    "bear_call_spread": 0.25,
     "long_strangle": 0.45
   },
   "delta": {
-    "actual_equity": 0.8049625255740023,
-    "equal_equity": 0.8945019115281401,
+    "actual_equity": 0.8505209118714316,
+    "equal_equity": 0.9099209528856461,
     "history": [
       {
         "cycle_id": "2026-08-31T11:28-0400",
@@ -55,12 +55,20 @@
         "actual_equity": 0.8049625255740023,
         "equal_weight_equity": 0.8945019115281401,
         "cumulative_delta": -0.0895393859541378
+      },
+      {
+        "cycle_id": "2026-09-10T13:30-0400",
+        "actual_return": 0.056596903396145856,
+        "equal_weight_return": 0.01723757228328851,
+        "actual_equity": 0.8505209118714316,
+        "equal_weight_equity": 0.9099209528856461,
+        "cumulative_delta": -0.05940004101421448
       }
     ]
   },
   "rejections": {
     "approve": 4,
-    "modify": 2,
+    "modify": 3,
     "reject": 0
   },
   "shadow": {
@@ -75,7 +83,7 @@
       "right": "put",
       "entry": 0.6850764115275467,
       "max_loss": 2.3149235884724533,
-      "last_pnl": -0.1618126379396756
+      "last_pnl": -0.5358222483108932
     },
     "bear_call_spread": {
       "strategy_key": "bear_call_spread",
@@ -88,7 +96,7 @@
       "right": "call",
       "entry": 0.6766840093010558,
       "max_loss": 2.3233159906989442,
-      "last_pnl": 0.2044755195778265
+      "last_pnl": 0.43786831940669657
     },
     "long_strangle": {
       "strategy_key": "long_strangle",
@@ -101,7 +109,7 @@
       "right": null,
       "entry": 5.939570726883886,
       "max_loss": 5.939570726883886,
-      "last_pnl": -0.2024254149605298
+      "last_pnl": 0.4676800151520695
     }
   }
 }
