@@ -5,8 +5,8 @@
     "long_strangle": 0.45
   },
   "delta": {
-    "actual_equity": 0.5907935123008703,
-    "equal_equity": 0.8922657116700042,
+    "actual_equity": 0.5617877498202493,
+    "equal_equity": 0.8943970667225996,
     "history": [
       {
         "cycle_id": "2026-08-31T11:28-0400",
@@ -103,40 +103,48 @@
         "actual_equity": 0.5907935123008703,
         "equal_weight_equity": 0.8922657116700042,
         "cumulative_delta": -0.30147219936913394
+      },
+      {
+        "cycle_id": "2026-09-18T13:28-0400",
+        "actual_return": -0.049096277932465515,
+        "equal_weight_return": 0.00238869994074552,
+        "actual_equity": 0.5617877498202493,
+        "equal_weight_equity": 0.8943970667225996,
+        "cumulative_delta": -0.3326093169023503
       }
     ]
   },
   "rejections": {
     "approve": 5,
-    "modify": 7,
+    "modify": 8,
     "reject": 0
   },
   "shadow": {
     "bull_put_spread": {
       "strategy_key": "bull_put_spread",
-      "opened_asof": "2026-09-14",
+      "opened_asof": "2026-09-18",
       "dte_at_open": 10,
       "strikes": [
-        700.0,
-        697.0
+        705.0,
+        702.0
       ],
       "right": "put",
-      "entry": 0.6793581948589917,
-      "max_loss": 2.3206418051410083,
-      "last_pnl": 0.31301204391306214
+      "entry": 0.6951058039255145,
+      "max_loss": 2.3048941960744855,
+      "last_pnl": 0.0
     },
     "bear_call_spread": {
       "strategy_key": "bear_call_spread",
-      "opened_asof": "2026-09-14",
+      "opened_asof": "2026-09-18",
       "dte_at_open": 10,
       "strikes": [
-        724.0,
-        727.0
+        730.0,
+        733.0
       ],
       "right": "call",
-      "entry": 0.6525293433631418,
-      "max_loss": 2.347470656636858,
-      "last_pnl": -0.1770931040976791
+      "entry": 0.6617100578798158,
+      "max_loss": 2.338289942120184,
+      "last_pnl": 0.0
     },
     "long_strangle": {
       "strategy_key": "long_strangle",
@@ -149,7 +157,7 @@
       "right": null,
       "entry": 5.775219340569933,
       "max_loss": 5.775219340569933,
-      "last_pnl": -0.05338231011531036
+      "last_pnl": -0.17156243732082999
     }
   }
 }
