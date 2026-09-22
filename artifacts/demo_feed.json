@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-22T20:54:34.379240+00:00",
+  "generated_at": "2026-09-22T21:01:04.033055+00:00",
   "strategies": [
     {
       "key": "bull_put_spread",
@@ -455,6 +455,12 @@
     },
     {
       "cycle_id": "2026-09-22T16:54-0400",
+      "asof": "2026-09-22",
+      "status": "skipped_market_closed",
+      "verdict": null
+    },
+    {
+      "cycle_id": "2026-09-22T17:01-0400",
       "asof": "2026-09-22",
       "status": "skipped_market_closed",
       "verdict": null
