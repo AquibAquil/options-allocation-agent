@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-15T18:00:44.050765+00:00",
+  "generated_at": "2026-10-15T21:15:40.661596+00:00",
   "strategies": [
     {
       "key": "bull_put_spread",
@@ -637,17 +637,15 @@
       "asof": "2026-10-15",
       "status": "traded",
       "verdict": "APPROVE"
+    },
+    {
+      "cycle_id": "2026-10-15T17:15-0400",
+      "asof": "2026-10-15",
+      "status": "skipped_market_closed",
+      "verdict": null
     }
   ],
   "metrics": {
-    "this_cycle": {
-      "cycle_id": "2026-10-15T13:59-0400",
-      "actual_return": 0.044790770724033126,
-      "equal_weight_return": 0.006162624113683125,
-      "actual_equity": 1.4614832601812737,
-      "equal_weight_equity": 1.3007061818339494,
-      "cumulative_delta": 0.16077707834732435
-    },
     "allocation_delta": {
       "actual_total_return": 0.4614832601812737,
       "equal_weight_total_return": 0.30070618183394937,
