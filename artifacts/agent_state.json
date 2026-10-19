@@ -1,12 +1,12 @@
 {
   "last_valid_allocation": {
-    "bull_put_spread": 0.472360963651709,
-    "bear_call_spread": 0.15,
-    "long_strangle": 0.4
+    "bull_put_spread": 0.0,
+    "bear_call_spread": 0.45,
+    "long_strangle": 0.0
   },
   "delta": {
-    "actual_equity": 2.316338969675517,
-    "equal_equity": 1.3329438351768597,
+    "actual_equity": 2.1438452498264624,
+    "equal_equity": 1.379910105265835,
     "history": [
       {
         "cycle_id": "2026-08-31T11:28-0400",
@@ -223,40 +223,48 @@
         "actual_equity": 2.316338969675517,
         "equal_weight_equity": 1.3329438351768597,
         "cumulative_delta": 0.9833951344986571
+      },
+      {
+        "cycle_id": "2026-10-19T15:38-0400",
+        "actual_return": -0.0744682544771148,
+        "equal_weight_return": 0.03523499554108646,
+        "actual_equity": 2.1438452498264624,
+        "equal_weight_equity": 1.379910105265835,
+        "cumulative_delta": 0.7639351445606275
       }
     ]
   },
   "rejections": {
     "approve": 11,
-    "modify": 16,
+    "modify": 17,
     "reject": 0
   },
   "shadow": {
     "bull_put_spread": {
       "strategy_key": "bull_put_spread",
-      "opened_asof": "2026-10-14",
+      "opened_asof": "2026-10-19",
       "dte_at_open": 10,
       "strikes": [
-        713.0,
-        710.0
+        703.0,
+        700.0
       ],
       "right": "put",
-      "entry": 0.7258452470898362,
-      "max_loss": 2.274154752910164,
-      "last_pnl": -0.7089211875673698
+      "entry": 0.7208513076969041,
+      "max_loss": 2.279148692303096,
+      "last_pnl": 0.0
     },
     "bear_call_spread": {
       "strategy_key": "bear_call_spread",
-      "opened_asof": "2026-10-14",
+      "opened_asof": "2026-10-19",
       "dte_at_open": 10,
       "strikes": [
-        746.0,
-        749.0
+        740.0,
+        743.0
       ],
       "right": "call",
-      "entry": 0.6610597010859749,
-      "max_loss": 2.338940298914025,
-      "last_pnl": 0.4703684859351114
+      "entry": 0.6687103929693592,
+      "max_loss": 2.331289607030641,
+      "last_pnl": 0.0
     },
     "long_strangle": {
       "strategy_key": "long_strangle",
@@ -269,7 +277,7 @@
       "right": null,
       "entry": 7.855364092128596,
       "max_loss": 7.855364092128596,
-      "last_pnl": 1.5983179596640156
+      "last_pnl": 0.9660112345566603
     }
   }
 }
