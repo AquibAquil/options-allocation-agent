@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-28T19:19:55.186597+00:00",
+  "generated_at": "2026-10-29T19:25:06.435154+00:00",
   "strategies": [
     {
       "key": "bull_put_spread",
@@ -42,133 +42,136 @@
   "state": "live",
   "has_data": true,
   "latest": {
-    "cycle_id": "2026-10-28T15:19-0400",
-    "asof": "2026-10-28",
+    "cycle_id": "2026-10-29T15:24-0400",
+    "asof": "2026-10-29",
     "status": "held_on_failure",
     "reason": "sizing/execution produced no fills",
     "is_dry_run": false,
     "market": {
       "symbol": "QQQ",
-      "spot": 722.57,
-      "spot_asof": "2026-10-28",
-      "realized_vol_21d": 0.19064268137644008,
-      "implied_vol": 0.2491,
+      "spot": 713.241,
+      "spot_asof": "2026-10-29",
+      "realized_vol_21d": 0.19967966117178065,
+      "implied_vol": 0.2378,
       "implied_vol_source": "CBOE VXN",
-      "iv_percentile_252d": 65.47619047619048,
+      "iv_percentile_252d": 55.95238095238095,
       "iv_rv": {
-        "implied": 0.2491,
-        "realized": 0.19064268137644008,
-        "spread": 0.058457318623559906,
-        "ratio": 1.3066329019372687
+        "implied": 0.2378,
+        "realized": 0.19967966117178065,
+        "spread": 0.03812033882821936,
+        "ratio": 1.190907469516513
       }
     },
     "portfolio": {
-      "equity": 69126.29,
+      "equity": 71726.29,
       "buying_power": 218369.16,
-      "risk_budget_total": 13825.258,
-      "risk_budget_utilisation": 2.716766659978425,
-      "max_loss_as_frac_of_equity": 0.543353331995685
+      "risk_budget_total": 14345.258,
+      "risk_budget_utilisation": 2.6182868234227645,
+      "max_loss_as_frac_of_equity": 0.5236573646845529
     },
     "strategies": [
       {
         "key": "bull_put_spread",
         "name": "Bull put spread",
-        "current_alloc": 0.20657842334660229,
-        "proposed_alloc": 0.35,
-        "final_alloc": 0.35,
-        "change": 0.1434215766533977,
+        "current_alloc": 0.19909018018358401,
+        "proposed_alloc": 0.15,
+        "final_alloc": 0.19909018018358401,
+        "change": 0.0,
         "contracts": 12,
-        "pnl_frac_of_max_loss": 0.07563025210084033,
-        "unrealized_pnl": 216.0,
-        "short_strike_distance_sigma": -1.1162857931700818,
-        "reasoning": "Short strike is ~1.1 sigma below spot and iv (0.249) exceeds realized vol (0.191), so the premium still justifies the thesis; no invalidation signals are present."
+        "pnl_frac_of_max_loss": -0.07142857142857142,
+        "unrealized_pnl": -204.0,
+        "short_strike_distance_sigma": -0.47412493968106173,
+        "reasoning": "Short strike is only 0.5\u03c3 below spot (\u20110.474\u03c3) with 1\u202fday to expiry, so the buffer is thin; although IV>RV (ratio\u202f1.19) the proximity raises breach risk, prompting a modest reduction."
       },
       {
         "key": "bear_call_spread",
         "name": "Bear call spread",
-        "current_alloc": 0.3905894559074413,
+        "current_alloc": 0.37643101295215464,
         "proposed_alloc": 0.35,
-        "final_alloc": 0.3905894559074413,
+        "final_alloc": 0.37643101295215464,
         "change": 0.0,
         "contracts": 24,
-        "pnl_frac_of_max_loss": 0.26666666666666666,
-        "unrealized_pnl": 1440.0,
-        "short_strike_distance_sigma": 1.7594212612549445,
-        "reasoning": "Short strike sits ~1.76 sigma above spot with iv still above realized vol, meeting the thesis conditions and showing no invalidation triggers."
+        "pnl_frac_of_max_loss": 0.3288888888888889,
+        "unrealized_pnl": 1776.0,
+        "short_strike_distance_sigma": null,
+        "reasoning": "Short strike sits 3.5% above spot (+0.0347) providing ample buffer, IV still exceeds RV and the position is unrealised +33% of max loss, so the thesis remains strong and warrants a high allocation within the 0.45 cap."
       },
       {
         "key": "long_strangle",
         "name": "Long strangle",
-        "current_alloc": 2.119598780724382,
-        "proposed_alloc": 0.0,
-        "final_alloc": 0.0,
-        "change": -2.119598780724382,
+        "current_alloc": 2.0427656302870263,
+        "proposed_alloc": 0.3,
+        "final_alloc": 0.45,
+        "change": -1.5927656302870263,
         "contracts": 8,
-        "pnl_frac_of_max_loss": -0.31729456729456723,
-        "unrealized_pnl": -9298.0,
+        "pnl_frac_of_max_loss": -0.22570297570297568,
+        "unrealized_pnl": -6614.0,
         "short_strike_distance_sigma": null,
-        "reasoning": "Implied\u2011vol percentile is ~75% (high) indicating protection is no longer cheap, and the position is deep in unrealized loss; the cheap\u2011protection condition of the thesis is violated, so we drop it."
+        "reasoning": "IV percentile is ~56% (mid\u2011range) indicating protection is still reasonably cheap and the market\u2019s mixed recent moves keep expansion potential alive; its near\u2011zero correlation with the bear spread adds diversification, justifying a solid 0.30 share."
       }
     ],
     "decision": {
       "proposed": {
-        "bull_put_spread": 0.35,
+        "bull_put_spread": 0.15,
         "bear_call_spread": 0.35,
-        "long_strangle": 0.0
+        "long_strangle": 0.3
       },
       "reasoning": {
-        "bull_put_spread": "Short strike is ~1.1 sigma below spot and iv (0.249) exceeds realized vol (0.191), so the premium still justifies the thesis; no invalidation signals are present.",
-        "bear_call_spread": "Short strike sits ~1.76 sigma above spot with iv still above realized vol, meeting the thesis conditions and showing no invalidation triggers.",
-        "long_strangle": "Implied\u2011vol percentile is ~75% (high) indicating protection is no longer cheap, and the position is deep in unrealized loss; the cheap\u2011protection condition of the thesis is violated, so we drop it."
+        "bull_put_spread": "Short strike is only 0.5\u03c3 below spot (\u20110.474\u03c3) with 1\u202fday to expiry, so the buffer is thin; although IV>RV (ratio\u202f1.19) the proximity raises breach risk, prompting a modest reduction.",
+        "bear_call_spread": "Short strike sits 3.5% above spot (+0.0347) providing ample buffer, IV still exceeds RV and the position is unrealised +33% of max loss, so the thesis remains strong and warrants a high allocation within the 0.45 cap.",
+        "long_strangle": "IV percentile is ~56% (mid\u2011range) indicating protection is still reasonably cheap and the market\u2019s mixed recent moves keep expansion potential alive; its near\u2011zero correlation with the bear spread adds diversification, justifying a solid 0.30 share."
       },
-      "portfolio_rationale": "The two short\u2011vol spreads are strongly negatively correlated, providing diversification while each stays well within the 0.45 per\u2011strategy cap. Removing the long strangle eliminates a position whose thesis is invalidated and reduces overall concentration, bringing total allocation to 0.70\u202f\u2264\u202f1.0 and respecting the 20% equity risk\u2011budget limit.",
+      "portfolio_rationale": "The short\u2011vol spreads are negatively correlated (\u20110.87) and together hedge each other, while the long strangle offers low correlation (\u22480) to the bear spread and moderate negative correlation to the bull spread, reducing overall concentration. All allocations stay below the 45% per\u2011strategy limit and sum to 0.80, leaving headroom for future adjustments and respecting the total\u2011budget constraint.",
       "model": "openai/gpt-oss-120b"
     },
     "challenge": {
       "verdict": "MODIFY",
-      "critique": "Bull put spread increase is supported by its short strike being ~1.1 sigma below spot and IV (0.2491) exceeding realized vol (0.1906), with no invalidation signals. Long strangle drop is justified because implied\u2011vol percentile is ~75% (high), indicating protection is no longer cheap, meeting its invalidation condition. However, reducing the bear call spread allocation is not supported by any evidence; its short strike is ~1.76 sigma above spot, IV still exceeds realized vol, and it shows a positive unrealized P&L, so cutting it appears to be performance chasing.",
+      "critique": "The allocator cuts the long strangle from its current 2.04 allocation to 0.30 despite the evidence showing no invalidation of its thesis. The strategy is unrealised at a loss (-6614, pnl_frac -0.226) but the 'not_invalidation' clause explicitly states that losing money is not evidence against the thesis. Moreover, the implied volatility percentile is ~56% (mid\u2011range), indicating protection is still reasonably cheap, and market returns show mixed moves, preserving expansion potential. Therefore the reduction is driven by performance chasing rather than thesis conditions. The allocation can be increased up to the per\u2011strategy cap of 0.45 while respecting the total\u2011budget constraint.",
       "evidence_cited": [
-        "bull_put_spread short_strike_distance_sigma -1.1162857931700818 and iv 0.2491 > realized 0.19064268137644008",
-        "long_strangle implied_vol_percentile_full 74.93036211699165 indicating high percentile and cheap\u2011protection violation",
-        "bear_call_spread short_strike_distance_sigma 1.7594212612549445 and iv 0.2491 > realized 0.19064268137644008, unrealized_pnl 1440.0"
+        "long_strangle.unrealized_pnl",
+        "long_strangle.not_invalidation",
+        "market.implied_vol_percentile_252d"
       ],
       "modified_allocations": {
-        "bull_put_spread": 0.35,
-        "bear_call_spread": 0.3905894559074413,
-        "long_strangle": 0.0
+        "bull_put_spread": 0.15,
+        "bear_call_spread": 0.35,
+        "long_strangle": 0.45
       }
     },
     "final_allocation": {
-      "bull_put_spread": 0.35,
-      "bear_call_spread": 0.3905894559074413,
-      "long_strangle": 0.0
+      "bull_put_spread": 0.19909018018358401,
+      "bear_call_spread": 0.37643101295215464,
+      "long_strangle": 0.45
     },
     "effective_source": "challenger_modified",
-    "gate_adjustments": [],
+    "gate_adjustments": [
+      "change of -4.9% is below the 5% threshold; holding at 19.9%",
+      "change of -2.6% is below the 5% threshold; holding at 37.6%"
+    ],
     "orders": [],
     "metrics": {
       "this_cycle": {
-        "cycle_id": "2026-10-28T15:19-0400",
-        "actual_return": -0.09320783546762336,
-        "equal_weight_return": -0.0046216463743604,
-        "actual_equity": -0.20856772204164273,
-        "equal_weight_equity": 1.2716044576015373,
-        "cumulative_delta": -1.48017217964318
+        "cycle_id": "2026-10-29T15:24-0400",
+        "actual_return": 0.05654566442087088,
+        "equal_weight_return": -0.005172001140019703,
+        "actual_equity": -0.2203613224612349,
+        "equal_weight_equity": 1.265027717897168,
+        "cumulative_delta": -1.485389040358403
       },
       "allocation_delta": {
-        "actual_total_return": -1.2085677220416426,
-        "equal_weight_total_return": 0.2716044576015373,
-        "allocation_delta": -1.48017217964318,
-        "cycles": 35,
+        "actual_total_return": -1.2203613224612349,
+        "equal_weight_total_return": 0.26502771789716806,
+        "allocation_delta": -1.485389040358403,
+        "cycles": 36,
         "beats_equal_weight": false
       },
       "rejection": {
-        "total_reviews": 35,
+        "total_reviews": 36,
         "approve": 12,
-        "modify": 23,
+        "modify": 24,
         "reject": 0,
-        "rejection_rate": 0.6571428571428571,
-        "approval_rate": 0.34285714285714286
+        "rejection_rate": 0.6666666666666666,
+        "approval_rate": 0.3333333333333333
       }
     }
   },
@@ -382,6 +385,12 @@
       "actual_equity": -0.20856772204164273,
       "equal_weight_equity": 1.2716044576015373,
       "cumulative_delta": -1.48017217964318
+    },
+    {
+      "cycle_id": "2026-10-29T15:24-0400",
+      "actual_equity": -0.2203613224612349,
+      "equal_weight_equity": 1.265027717897168,
+      "cumulative_delta": -1.485389040358403
     }
   ],
   "cycles": [
@@ -738,31 +747,37 @@
       "asof": "2026-10-28",
       "status": "held_on_failure",
       "verdict": "MODIFY"
+    },
+    {
+      "cycle_id": "2026-10-29T15:24-0400",
+      "asof": "2026-10-29",
+      "status": "held_on_failure",
+      "verdict": "MODIFY"
     }
   ],
   "metrics": {
     "this_cycle": {
-      "cycle_id": "2026-10-28T15:19-0400",
-      "actual_return": -0.09320783546762336,
-      "equal_weight_return": -0.0046216463743604,
-      "actual_equity": -0.20856772204164273,
-      "equal_weight_equity": 1.2716044576015373,
-      "cumulative_delta": -1.48017217964318
+      "cycle_id": "2026-10-29T15:24-0400",
+      "actual_return": 0.05654566442087088,
+      "equal_weight_return": -0.005172001140019703,
+      "actual_equity": -0.2203613224612349,
+      "equal_weight_equity": 1.265027717897168,
+      "cumulative_delta": -1.485389040358403
     },
     "allocation_delta": {
-      "actual_total_return": -1.2085677220416426,
-      "equal_weight_total_return": 0.2716044576015373,
-      "allocation_delta": -1.48017217964318,
-      "cycles": 35,
+      "actual_total_return": -1.2203613224612349,
+      "equal_weight_total_return": 0.26502771789716806,
+      "allocation_delta": -1.485389040358403,
+      "cycles": 36,
       "beats_equal_weight": false
     },
     "rejection": {
-      "total_reviews": 35,
+      "total_reviews": 36,
       "approve": 12,
-      "modify": 23,
+      "modify": 24,
       "reject": 0,
-      "rejection_rate": 0.6571428571428571,
-      "approval_rate": 0.34285714285714286
+      "rejection_rate": 0.6666666666666666,
+      "approval_rate": 0.3333333333333333
     }
   },
   "correlation": {
