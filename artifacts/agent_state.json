@@ -6,7 +6,7 @@
   },
   "delta": {
     "actual_equity": -0.638942430941443,
-    "equal_equity": 1.7062445597606566,
+    "equal_equity": 1.7093217844114044,
     "history": [
       {
         "cycle_id": "2026-08-31T11:28-0400",
@@ -327,53 +327,61 @@
         "actual_equity": -0.638942430941443,
         "equal_weight_equity": 1.7062445597606566,
         "cumulative_delta": -2.3451869907021
+      },
+      {
+        "cycle_id": "2026-11-10T15:42-0500",
+        "actual_return": 0.0,
+        "equal_weight_return": 0.0018035073771484498,
+        "actual_equity": -0.638942430941443,
+        "equal_weight_equity": 1.7093217844114044,
+        "cumulative_delta": -2.3482642153528475
       }
     ]
   },
   "rejections": {
-    "approve": 12,
+    "approve": 13,
     "modify": 28,
     "reject": 0
   },
   "shadow": {
     "bull_put_spread": {
       "strategy_key": "bull_put_spread",
-      "opened_asof": "2026-11-03",
+      "opened_asof": "2026-11-10",
       "dte_at_open": 10,
       "strikes": [
-        666.0,
-        663.0
+        644.0,
+        641.0
       ],
       "right": "put",
-      "entry": 0.742582969716068,
-      "max_loss": 2.257417030283932,
-      "last_pnl": -0.9331370750169867
+      "entry": 0.7813651559018524,
+      "max_loss": 2.2186348440981476,
+      "last_pnl": 0.0
     },
     "bear_call_spread": {
       "strategy_key": "bear_call_spread",
-      "opened_asof": "2026-11-03",
+      "opened_asof": "2026-11-10",
       "dte_at_open": 10,
       "strikes": [
-        707.0,
-        710.0
+        708.0,
+        711.0
       ],
       "right": "call",
-      "entry": 0.6749694595914377,
-      "max_loss": 2.3250305404085623,
-      "last_pnl": 0.39688816589816156
+      "entry": 0.6522412950099294,
+      "max_loss": 2.3477587049900706,
+      "last_pnl": 0.0
     },
     "long_strangle": {
       "strategy_key": "long_strangle",
-      "opened_asof": "2026-11-03",
+      "opened_asof": "2026-11-10",
       "dte_at_open": 30,
       "strikes": [
-        739.0,
-        640.0
+        760.0,
+        606.0
       ],
       "right": null,
-      "entry": 10.046326779701218,
-      "max_loss": 10.046326779701218,
-      "last_pnl": 14.351107191851042
+      "entry": 15.277325349811022,
+      "max_loss": 15.277325349811022,
+      "last_pnl": 0.0
     }
   }
 }
